@@ -1,0 +1,2 @@
+requests==1.2.3
+etcd-py==0.0.2

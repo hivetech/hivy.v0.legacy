@@ -1,0 +1,9 @@
+series: precise
+cell: hivelab
+version: latest
+services:
+    mysql
+    wordpress
+packages:
+    zsh
+    vim
