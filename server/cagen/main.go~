@@ -1,0 +1,17 @@
+package main
+
+import (
+
+	"fmt"
+	"github.com/kless/easycert"
+
+)
+
+
+func main() {
+
+	easycert.Init()
+
+	fmt.Println("coin")
+
+}
