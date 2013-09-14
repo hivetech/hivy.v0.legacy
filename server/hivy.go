@@ -12,7 +12,7 @@ import (
 
     //"github.com/codegangsta/cli"
     //"launchpad.net/loggo"
-    //"./server"
+
     "github.com/coreos/etcd/store"
     "github.com/coreos/go-etcd/etcd"
     "strings"
@@ -97,84 +97,18 @@ func main() {
 
 	//prompt access for multiple process
 	//from mess define the state status of machine
-	go func() {
-		//TODO add buffer effect
-		for {
-			mess := <- prompt
-			fmt.Println(mess)
-			cont := strings.Fields(mess)
-			if cont[0] == "SET" {
-				//well, cos I cant' manage fucking split dumbdumb
-				ext := strings.Fields(strings.Replace(cont[1], "/"," ",-1))
-				ct := context.Context{}
-				ct.User = ext[0]
-				ct.Project = ext[1]
-				ct.Target = ext[2:]
-				if ext[len(ext)-1] == "state" {
-					if cont[2] != "" { ct.Value = cont[2] }
-				}
-				//THIS IS THE STATE_ENGINE WATCHER
-				switch ct.State_location() { // NB we can have previous info from the etcd server with the prevalue state
-					case "configloaded": //NB fallthrough could be use for sequences
-						//set watcher for run/value = True
-						fmt.Println("configloaded")
+	
 
-					case "running":
-						// $cell, $series from config
-						// juju deploy --repo=HERE local:$series/$cell $user-$project-$cell
-						//TODO test if charm is already deployed
-						fmt.Println("running")
-
-						//TODO test here from etcd answer that the previous state was loaded!!
-						//REST logik : need to reload conf for each request
-						conf := jdc.JujuDeployConfig{}
-						err := conf.GetEtcdConfig(&ct)// TODO force read only for ct!!
-						if err != nil {
-							fmt.Println(err)
-						}
-
-						//conf.Packages are used to custom the hivelab
-						//find a way to say to ansible "put this shit 
-						//in the next container
-
-						if SETTINGS.Jujupath == " " { SETTINGS.Jujupath = "" } // "\ " forbidden
-						cmd := exec.Command(SETTINGS.Jujupath+"juju","deploy",
-						"--repository="+SETTINGS.Cellpath,
-						"local:"+conf.Series+"/"+conf.Cell,
-						ct.User+"-"+ct.Project+"-"+conf.Cell)
-						
-						err = cmd.Run()
-						if err != nil { fmt.Println(err) }
-
-						//myTiny dbhash
-						availableservices := map[string]bool{}//could meme unix mod/own
-						availableservices["mysql"]=true
-						availableservices["wordpress"]=true
-
-						for i:= range conf.Services {
-							if availableservices[conf.Services[i]] {
-								cmd = exec.Command(SETTINGS.Jujupath+"juju","deploy",
-								/* no repo for services at MVP */
-								conf.Services[i],
-								ct.User+"-"+ct.Project+"-"+conf.Services[i])
-								
-								err = cmd.Run()
-								if err != nil { fmt.Println(err) }
-							}
-						}
-
-						//TODO
-						//when services rdy, connect them to hivelab
-						//and between them if needed
-						//well, hivelab need some hooks for connection
+/*
 
 
-					default:
-						fmt.Println("can't reach the state or the state is not registered on action purpose")
-				}
-			 }
-		    }
-	}()
+
+
+
+
+
+*/
+
 
 	//here set the watched keys
 	//TODO should be set from a user base & dynamically added
