@@ -1,3 +1,7 @@
+/*
+*	Copyright (C) 2013 Mathieu Dous
+*/
+
 package state_engine
 
 import "fmt"

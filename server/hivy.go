@@ -1,3 +1,8 @@
+/*
+*	Copyright (C) 2013 Mathieu Dous
+*/
+
+
 package main
 
 import (
