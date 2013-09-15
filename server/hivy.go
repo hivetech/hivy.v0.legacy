@@ -5,18 +5,12 @@ import (
     "os/signal"
     "fmt"
     "flag"
-    "os/exec"
-
-    jdc "./jujudeployconfig"
-    "./context"
-
-    //"github.com/codegangsta/cli"
-    //"launchpad.net/loggo"
+    //"os/exec"
+    "./state_engine"
 
     "github.com/coreos/etcd/store"
     "github.com/coreos/go-etcd/etcd"
     "strings"
-
 
     "io/ioutil"
     "launchpad.net/goyaml"
@@ -94,21 +88,27 @@ func main() {
 	
 	receiver := make(chan *store.Response)
 	prompt := make(chan string)
+	var machine = state_engine.NewState_engine()
+	machine.InitState_engine()
+
+	go func() {
+		for {
+			mess := <- prompt
+			fmt.Println(mess)
+			cont := strings.Fields(mess)
+			if cont[0] == "SET"{
+				req := strings.Fields(strings.Replace(cont[1], "/"," ",-1))
+				machine.Dispatcher(req,cont[2])
+			}
+
+
+
+		}
+	}()
 
 	//prompt access for multiple process
 	//from mess define the state status of machine
 	
-
-/*
-
-
-
-
-
-
-
-*/
-
 
 	//here set the watched keys
 	//TODO should be set from a user base & dynamically added

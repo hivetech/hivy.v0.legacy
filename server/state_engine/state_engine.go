@@ -1,54 +1,160 @@
 package state_engine
 
 import "fmt"
+import "errors"
+
+//for the go API
+import "github.com/coreos/go-etcd/etcd"
+import "strconv"
+import "strings"
+
+//
+import "os/exec"
+
+type buffer struct {
+	data map[string]map[string][]string
+}
+
+func NewBuffer() *buffer {
+	return &buffer{}
+}
+func (b *buffer) InitBuffer() {
+	b.data = make(map[string]map[string][]string)
+}
+func (b *buffer) setkey(scope string, key string) {
+	if scope != "" && key != "" {
+		if b.data[scope] == nil {
+			b.data[scope] = make(map[string][]string)
+		}
+		b.data[scope][key] = []string{}
+	}
+}
+func (b *buffer) setdata(scope string, key string, values []string) {
+	if values == nil { return }
+	if scope != "" && key != "" {
+		if b.data[scope] == nil {
+			b.data[scope] = make(map[string][]string)
+		}
+		for _, val := range values {
+			b.data[scope][key] = append(b.data[scope][key], val)
+		}
+	}
+}
+func (b *buffer) getdata(scope string, key string) []string {
+	if scope != "" && key != "" {
+		return b.data[scope][key]
+	}
+	return []string{}
+}
+func (b *buffer) flush(scope string, key string) {
+	if scope != "" && key != "" {
+		delete(b.data[scope],key)
+	} else if scope != "" {
+		delete(b.data,scope)
+	}
+}
 
 type input struct {
 	User string
 	Project string
-	Target []string //example : 1 row : series : base, N rows : package : [a,b,c] c-plugin : [d,e,f]
+	Target string
 	Value string
-	State string
 }
 
-type action func(i *input) bool
+func NewInput() *input {
+	return &input{}
+}
 
-//****//
+type hook func(i *input) bool
 
-func projectconfigsetted(i *input) bool {
-	//TODO : check that no error raised during the 
+func (s *Situation) projectconfigsetted(i *input) bool {
+	//ToDO : check that no error raised during the 
 	// config setting
 	fmt.Println("TODO : projectconfigsetted %s\n",i)
 	return true
 }
 
-func jujuisconfigured(i *input) bool {
-	//TODO : check if juju is bootstraped and running
+func (s *Situation) jujuisconfigured(i *input) bool {
+	//ToDO : check if juju is bootstraped and running
 	fmt.Println("TODO : jujuisconfigured %s\n",i)
 	return true
 }
 
-func doesprevstateisconfigured(i *input) bool {
-	//TODO : check if the prev Value from etcd status 
+func (s *Situation) doesprevstateisconfigured(i *input) bool {
+	//ToDO : check if the prev Value from etcd status 
 	//
 	fmt.Println("TODO : doesprevstateisconfigured %s\n",i)
 	return true
 }
 
-func run(i *input) bool {
+func (s *Situation) run(i *input) bool {
+	fmt.Println("Hello I'm run\n")
+	/***** CONFIGURATION GETTER FROM ETCD ****/
+	scope := "config"
+	begin := i.User+"/"+i.Project+"/"+scope+"/"
+	end := "/"
+	err := errors.New("")
+	str := ""
+
+	for key,_ := range s.b.data[scope] {
+		str = begin+key+end
+		s.b.data["config"][key], err = gets(str)
+		if err != nil { fmt.Println(err) } //always return an error as index out of range
+	}
+	/************** GETTER DONE *****************/
+
+	/********** SERVICE VALIDATION ***************/
+	//deploy// 0 : cell, 1..end : services
+	services := []string{}
+	for _, cell := range s.b.data[scope]["cell"] {
+		services = append(services,cell)
+	}
+	for _, serv := range s.b.data[scope]["services"] {
+		services = append(services,serv)
+	}
+	//test if this situation allows such services
+	for _,serv := range services {
+		if s.What("services",serv) {
+		} else { return false }
+	}
+	/************ SERVICE VALIDATION DONE ************/ 
+
+	/***************** CELL CMD **********************/
+	cmd := exec.Command("juju","deploy",
+			    //"--repository="+SETTINGS.Cellpath,
+			    "--repository=/home/supercoin/cells",
+			    "local:"+s.b.data["config"]["series"][0]+"/"+services[0],
+			    i.User+"-"+i.Project+"-"+services[0])	
+	err = cmd.Run()
+	if err != nil { fmt.Println(err) }
+	/************* CELL CMD DONE *********************/
 	
+	/************* SERVICES DEPLOY ********************/
+	for _,serv := range services[1:] { //0 is cell
+		//cmd = exec.Command(SETTINGS.Jujupath+"juju","deploy",
+		cmd = exec.Command("juju","deploy",				
+				   serv,
+				   i.User+"-"+i.Project+"-"+serv)
+	
+		err = cmd.Run()
+		if err != nil { fmt.Println(err) }
+	}	
+	/************* SERVICE DEPLOY DONE ***************/
+	return true
+
 }
 
-type Condition struct {
-	utop map[string]map[string]bool //user/project map
-	ttov map[string]map[string]bool //target/value map
-	abilities map[string]map[string]bool //indicate active functionnalities like services
+type condition struct {
+	utop map[string]map[string]bool //watched segment	user/project map
+	ttov map[string]map[string]bool //tested segment 	target/value map
+	abilities map[string]map[string]bool //ability segment	indicate active functionnalities like services
 }
 
-func NewCondition() *Condition{
-	return &Condition{}
+func NewCondition() *condition{
+	return &condition{}
 }
 
-func (c *Condition) InitCondition() {
+func (c *condition) InitCondition() {
 	c.utop = make(map[string]map[string]bool)
 	c.ttov = make(map[string]map[string]bool)
 	c.abilities = make(map[string]map[string]bool)
@@ -56,7 +162,7 @@ func (c *Condition) InitCondition() {
 
 // yes yes, this is 3 times the same stuff, but I need to keep it explicit
 // mapmapmapmapmapmamapappppaammmmad
-func (c *Condition) Addutop (user string,project string) {
+func (c *condition) Addutop (user string,project string) {
 	if user != "" && project != "" {
 		if c.utop[user] == nil {
 			c.utop[user] = make(map[string]bool)
@@ -65,7 +171,7 @@ func (c *Condition) Addutop (user string,project string) {
 	}
 }
 
-func (c *Condition) Addttov (target string,value string) {
+func (c *condition) Addttov (target string,value string) {
 	if target != "" && value != "" {
 		if c.ttov[target] == nil {
 			c.ttov[target] = make(map[string]bool)
@@ -74,7 +180,7 @@ func (c *Condition) Addttov (target string,value string) {
 	}
 }
 
-func (c *Condition) Addability (domaine string,name string) {
+func (c *condition) Addability (domaine string,name string) {
 	if domaine != "" && name != "" {
 		if c.abilities[domaine] == nil {
 			c.abilities[domaine] = make(map[string]bool)
@@ -83,154 +189,180 @@ func (c *Condition) Addability (domaine string,name string) {
 	}
 }
 
-type State struct {
-	c *Condition
-	a []action	
+type Situation struct {
+	c *condition
+	a []hook
+	b *buffer	
 }
 
-func NewState() *State {
-	return &State{}
+func NewSituation() *Situation {
+	return &Situation{}
 }
 
-func (s *State) InitState() {
+func (s *Situation) InitSituation() {
 	s.c = NewCondition()
 	s.c.InitCondition()
+	s.b = NewBuffer()
+	s.b.InitBuffer()
 }
 
-func (s *State) Addutop (u string,p string) {
+func (s *Situation) Addutop (u string,p string) {
 	s.c.Addutop(u,p)
 }
 
-func (s *State) Addttov (t string,v string) {
+func (s *Situation) Addttov (t string,v string) {
 	s.c.Addttov(t,v)
 }
 
-func (s *State) Addability (d string,n string) {
+func (s *Situation) Addability (d string,n string) {
 	s.c.Addability(d,n)
 }
 
-func (s *State) Addaction(fp action) {
+func (s *Situation) Addhook(fp hook) {
 	s.a = append(s.a,fp)
 }
 
-func init() {
+func (s *Situation) Configbuffer(scope string, keys []string) {
+	for _, scopekey := range keys {
+		s.b.setkey(scope,scopekey)
+	}
+}
 
-	var setconfig = NewState()
-	setconfig.InitState()
+type State_engine struct {
+	State []*Situation
+	CurIn *input //current input build from the request
+}
+
+func NewState_engine() *State_engine {
+	return &State_engine{}
+}
+
+func (s *State_engine) InitState_engine() {
+	//get situation desc and stuff from db
+	//TODO how to get associated etcd??????
+
+	var setconfig = NewSituation()
+	setconfig.InitSituation()
 	setconfig.Addutop("user","project")
 	setconfig.Addutop("patate","coin")
 	setconfig.Addttov("state","loaded")
-	setconfig.Addaction(projectconfigsetted)
+	setconfig.Addhook(setconfig.projectconfigsetted)
+	//setconfig.Addhook(setconfig.jujuisconfigured)
 
-	var jujurunner = NewState()
-	jujurunner.InitState()
+	var jujurunner = NewSituation()
+	jujurunner.InitSituation()
 	jujurunner.Addutop("user","project")
-	jujurunner.Addability("service","mysql")
-	jujurunner.Addability("service","wordpress")
-	jujurunner.Addaction(jujuisconfigured)
+	jujurunner.Addttov("state","run")
+	jujurunner.Addability("services","hivelab")
+	jujurunner.Addability("services","mysql")
+	jujurunner.Addability("services","wordpress")
+	buff := []string{"series","cell","version","services","packages"}
+	jujurunner.Configbuffer("config",buff)
+	jujurunner.Addhook(jujurunner.jujuisconfigured) 
+	jujurunner.Addhook(jujurunner.doesprevstateisconfigured)
+	jujurunner.Addhook(jujurunner.run)
 
-
+	s.Addsituation(setconfig)
+	s.Addsituation(jujurunner)
 }
 
-//to get the current state and actions liked to it
-func (c *Context) State_location() string {
-	//what about a map[string]map[string]bool/int{} ? this could make the matching more efficient
-	users := []string{"patate","user"}
-	projects := []string{"project","pomme","coin"}	
-	//NB : very easy to extract and build from yaml
-	utop := map[string][]string{}
-	utop[users[0]]=[]string{projects[2]}
-	utop[users[1]]=[]string{projects[0]}
-	
-	if utop[c.User] != nil {
-		for i:= range utop[c.User] {
-			if utop[c.User][i] == c.Project {
-				//matching
-				//some state stuff here...damn, fix the state_engine
-				if c.Target[0] == "state" && c.Value == "loaded" { return "configloaded" }
-				if c.Target[0] == "state" && c.Value == "run" { return "running" }
-			}
+func (s *State_engine) Addsituation(sit *Situation) {
+	if sit != nil {
+		s.State = append(s.State,sit)
+	}
+}
+
+//this is the go routine which should be run on the main
+func (s *State_engine) Dispatcher(req []string,value string) {
+	//I don't mind the multiple validation of situation yet (which should result a dynamic merge of state or
+	// the dynamic creation of a new one)
+
+	var in = NewInput()
+
+	/************ build input from request *******/	
+	in.User = req[0]
+	in.Project = req[1]
+	in.Target = req[2]
+	if in.Target == "state" {
+		if value != "" {
+			in.Value = value
+		}
+	} 
+	/************ input rdy *******************/
+	//TODO : find a proper way for Target[0]
+	var situ *Situation
+	for _,sit := range s.State {
+		if sit.Who(in.User,in.Project) && sit.Where(in.Target,in.Value) {
+			situ = sit
 		}
 	}
-	return ""
+	if situ == nil {return} //no situation match, exit
+
+	//when the sit is defined, exec his hooks with the current set of input
+	for _, act := range situ.a {
+		if act(in) == false { return } //if an hook raise a false, then stop the process
+	}
+	//here, everythings went ok , yeay!
 }
 
+func (s *Situation) Who(origin string, key string) bool {
+	if origin != "" && key != "" {
+		return s.c.utop[origin][key]
+	}
+	return false
+}
+func (s *Situation) Where(origin string, key string) bool {
+	if origin != "" && key != "" {
+		return s.c.ttov[origin][key]
+	}
+	return false
+}
+func (s *Situation) What(origin string, key string) bool {
+	if origin != "" && key != "" {
+		return s.c.abilities[origin][key]
+	}
+	return false
+}
 
-func () {
-//TODO add buffer effect
-	for {
-		mess := <- prompt
-		fmt.Println(mess)
-		cont := strings.Fields(mess)
-		if cont[0] == "SET" {
-			//well, cos I cant' manage fucking split dumbdumb
-			ext := strings.Fields(strings.Replace(cont[1], "/"," ",-1))
-			ct := context.Context{}
-			ct.User = ext[0]
-			ct.Project = ext[1]
-			ct.Target = ext[2:]
-			if ext[len(ext)-1] == "state" {
-				if cont[2] != "" { ct.Value = cont[2] }
-			}
-			//THIS IS THE STATE_ENGINE WATCHER
-			switch ct.State_location() { // NB we can have previous info from the etcd server with the prevalue state
-				case "configloaded": //NB fallthrough could be use for sequences
-					//set watcher for run/value = True
-					fmt.Println("configloaded")
+/************** ETCD API ***********************/
 
-				case "running":
-					// $cell, $series from config
-					// juju deploy --repo=HERE local:$series/$cell $user-$project-$cell
-					//TODO test if charm is already deployed
-					fmt.Println("running")
-
-					//TODO test here from etcd answer that the previous state was loaded!!
-					//REST logik : need to reload conf for each request
-					conf := jdc.JujuDeployConfig{}
-					err := conf.GetEtcdConfig(&ct)// TODO force read only for ct!!
-					if err != nil {
-						fmt.Println(err)
-					}
-
-					//conf.Packages are used to custom the hivelab
-					//find a way to say to ansible "put this shit 
-					//in the next container
-
-					if SETTINGS.Jujupath == " " { SETTINGS.Jujupath = "" } // "\ " forbidden
-					cmd := exec.Command(SETTINGS.Jujupath+"juju","deploy",
-					"--repository="+SETTINGS.Cellpath,
-					"local:"+conf.Series+"/"+conf.Cell,
-					ct.User+"-"+ct.Project+"-"+conf.Cell)
-				
-					err = cmd.Run()
-					if err != nil { fmt.Println(err) }
-
-					//myTiny dbhash
-					availableservices := map[string]bool{}//could meme unix mod/own
-					availableservices["mysql"]=true
-					availableservices["wordpress"]=true
-
-					for i:= range conf.Services {
-						if availableservices[conf.Services[i]] {
-							cmd = exec.Command(SETTINGS.Jujupath+"juju","deploy",
-							/* no repo for services at MVP */
-							conf.Services[i],
-							ct.User+"-"+ct.Project+"-"+conf.Services[i])
-						
-							err = cmd.Run()
-							if err != nil { fmt.Println(err) }
-						}
-					}
-
-					//TODO
-					//when services rdy, connect them to hivelab
-					//and between them if needed
-					//well, hivelab need some hooks for connection
-
-
-				default:
-					fmt.Println("can't reach the state or the state is not registered on action purpose")
-			}
+func get(key string) (string,error) {
+	client := etcd.NewClient() //select the etcd relative to user
+	resps, err := client.Get(key)
+	if err != nil {
+		return "",err
+	}
+	for _, resp := range resps {
+		if resp.Value != ""{
+			//return resp.Value, nil
+			//fmt.Println(resp.Value)
+			ans := strings.Replace(resp.Value," ","",1)
+			return ans,nil
 		}
-    	}
+	}
+	return "",nil
 }
+
+// TODO : this function will get all index from a config value
+func gets(cut_key string) ([]string,error) {
+	resp := []string{}
+	echo := ""
+	err := errors.New("")
+	i:=0
+	key := cut_key+strconv.Itoa(i)
+	for {
+		echo, err = get(key)
+		if i == 0 && err != nil {
+			fmt.Println("no value indexed", err)
+			return nil, err
+		} else if err != nil {
+			fmt.Println ("tail or panic", err)
+			return resp, err
+		}
+		resp = append(resp, echo)
+		i=i+1
+		key = cut_key+strconv.Itoa(i)
+	}
+}
+
+/*****************************************************/
