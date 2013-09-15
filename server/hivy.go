@@ -16,6 +16,8 @@ import (
     "launchpad.net/goyaml"
     "path/filepath" 
 
+    "os/exec"
+
 )
 
 /*
@@ -62,6 +64,63 @@ func watch(client *etcd.Client, key string, receiver chan *store.Response, stop 
 	}
 }
 
+type authority struct {
+}
+
+
+
+type persistence struct {
+	serv_port string
+	serv_ip string
+	serv_name string
+	serv_certificate string
+	killer chan bool
+}
+
+func NewPersistence() *persistence {
+	return &persistence{}
+}
+
+func (p *persistence) InitPersistence(name string, port string, ip string, cert string) {
+	if port != "" {
+		p.serv_port = port
+	}
+	if ip != "" {
+		p.serv_ip = ip
+	}
+	if name != "" {
+		p.serv_name = name
+	}
+	if cert != "" {
+		p.serv_certificate = cert
+	}
+	//init
+	//local := make(chan string)
+	cmd := exec.Command("./utils","run",p.serv_name)
+	//go func() {}
+	fmt.Println("run :",p.serv_name)
+	cmd.Start()
+
+	//cmd = exec.Command("sleep","10")
+	//cmd.Run()
+
+	cmd = exec.Command("./utils","stop",p.serv_name)
+	cmd.Run()
+	cmd = exec.Command("./utils","init",p.serv_name,p.serv_port,p.serv_ip)
+	cmd.Run()
+	fmt.Println("init:",p.serv_name," done")
+	killer = make(chan bool)
+}
+
+func (p *persistence) On() {
+	cmd := exec.Command("./utils","run",p.serv_name)
+	cmd.Start()
+}
+func (p *persistence) Off() {
+	cmd := exec.Command("./utils","stop",p.serv_name)
+	cmd.Run()
+}
+
 //TODO add/remove dynamically keys, by watching input stream
 func main() {
 	//INIT
@@ -71,6 +130,12 @@ func main() {
 		fmt.Println(err)
 	}
 	fmt.Println(SETTINGS)
+
+	//name string, port int,  ip string cert string,
+	var hivy = NewPersistence()
+	hivy.InitPersistence("serv_hivy","4001","127.0.0.1","")
+
+
 
 	//var STATE_ENGINE_CONFIG
 	//var STATE_USER_CONFIG
@@ -84,6 +149,11 @@ func main() {
 		<-c //stuck till c
 		stop <- true //kill all whatchers
 		os.Exit(0) //nothing to do here!
+	}()
+
+	go func() {
+		hivy.On()
+		<-c // u need it to keep the etcd serv alive
 	}()
 	
 	receiver := make(chan *store.Response)
@@ -120,5 +190,6 @@ func main() {
 	}
 	//wait till the exit flag
 	<-stop
+	hivy.Off()
 }
 

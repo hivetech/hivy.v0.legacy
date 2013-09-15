@@ -145,8 +145,8 @@ func (s *Situation) run(i *input) bool {
 }
 
 type condition struct {
-	utop map[string]map[string]bool //watched segment	user/project map
-	ttov map[string]map[string]bool //tested segment 	target/value map
+	utop map[string]map[string]bool //event listener	user/project map
+	ttov map[string]map[string]bool //condition	 	target/value map
 	abilities map[string]map[string]bool //ability segment	indicate active functionnalities like services
 }
 
@@ -246,6 +246,8 @@ func (s *State_engine) InitState_engine() {
 	setconfig.Addutop("user","project")
 	setconfig.Addutop("patate","coin")
 	setconfig.Addttov("state","loaded")
+	setconfig.Addability("persistence","user") //if username != servername then have to add a link table
+	setconfig.Addability("persistence","patate")
 	setconfig.Addhook(setconfig.projectconfigsetted)
 	//setconfig.Addhook(setconfig.jujuisconfigured)
 

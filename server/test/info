@@ -1,0 +1,18 @@
+{
+ "name": "test",
+ "raftURL": "http://0.0.0.0:7001",
+ "etcdURL": "http://0.0.0.0:5000",
+ "webURL": "",
+ "raftListenHost": "0.0.0.0:7001",
+ "etcdListenHost": "0.0.0.0:5000",
+ "raftTLS": {
+  "CertFile": "",
+  "KeyFile": "",
+  "CAFile": ""
+ },
+ "etcdTLS": {
+  "CertFile": "",
+  "KeyFile": "",
+  "CAFile": ""
+ }
+}
