@@ -4,7 +4,7 @@ import "fmt"
 import "errors"
 
 //for the go API
-import "github.com/coreos/go-etcd/etcd"
+import "github.com/zabka/go-etcd/etcd"
 import "strconv"
 import "strings"
 
@@ -67,27 +67,24 @@ func NewInput() *input {
 
 type hook func(i *input) bool
 
-func (s *Situation) projectconfigsetted(i *input) bool {
+func (s *Situation) Projectconfigsetted(i *input) bool {
 	//ToDO : check that no error raised during the 
 	// config setting
 	fmt.Println("TODO : projectconfigsetted %s\n",i)
 	return true
 }
-
-func (s *Situation) jujuisconfigured(i *input) bool {
+func (s *Situation) Jujuisconfigured(i *input) bool {
 	//ToDO : check if juju is bootstraped and running
 	fmt.Println("TODO : jujuisconfigured %s\n",i)
 	return true
 }
-
-func (s *Situation) doesprevstateisconfigured(i *input) bool {
+func (s *Situation) Doesprevstateisconfigured(i *input) bool {
 	//ToDO : check if the prev Value from etcd status 
 	//
 	fmt.Println("TODO : doesprevstateisconfigured %s\n",i)
 	return true
 }
-
-func (s *Situation) run(i *input) bool {
+func (s *Situation) Run(i *input) bool {
 	fmt.Println("Hello I'm run\n")
 	/***** CONFIGURATION GETTER FROM ETCD ****/
 	scope := "config"
@@ -96,9 +93,13 @@ func (s *Situation) run(i *input) bool {
 	err := errors.New("")
 	str := ""
 
+	if s.m[i.User] == nil {
+		return false //dont have a proper etcd.Client
+	}
+
 	for key,_ := range s.b.data[scope] {
 		str = begin+key+end
-		s.b.data["config"][key], err = gets(str)
+		s.b.data["config"][key], err = gets(s.m[i.User],str)
 		if err != nil { fmt.Println(err) } //always return an error as index out of range
 	}
 	/************** GETTER DONE *****************/
@@ -141,27 +142,22 @@ func (s *Situation) run(i *input) bool {
 	}	
 	/************* SERVICE DEPLOY DONE ***************/
 	return true
-
 }
+
 
 type condition struct {
 	utop map[string]map[string]bool //event listener	user/project map
 	ttov map[string]map[string]bool //condition	 	target/value map
 	abilities map[string]map[string]bool //ability segment	indicate active functionnalities like services
 }
-
 func NewCondition() *condition{
 	return &condition{}
 }
-
 func (c *condition) InitCondition() {
 	c.utop = make(map[string]map[string]bool)
 	c.ttov = make(map[string]map[string]bool)
 	c.abilities = make(map[string]map[string]bool)
 }
-
-// yes yes, this is 3 times the same stuff, but I need to keep it explicit
-// mapmapmapmapmapmamapappppaammmmad
 func (c *condition) Addutop (user string,project string) {
 	if user != "" && project != "" {
 		if c.utop[user] == nil {
@@ -170,7 +166,6 @@ func (c *condition) Addutop (user string,project string) {
 		c.utop[user][project] = true
 	}
 }
-
 func (c *condition) Addttov (target string,value string) {
 	if target != "" && value != "" {
 		if c.ttov[target] == nil {
@@ -179,7 +174,6 @@ func (c *condition) Addttov (target string,value string) {
 		c.ttov[target][value] = true
 	}
 }
-
 func (c *condition) Addability (domaine string,name string) {
 	if domaine != "" && name != "" {
 		if c.abilities[domaine] == nil {
@@ -189,58 +183,63 @@ func (c *condition) Addability (domaine string,name string) {
 	}
 }
 
+
 type Situation struct {
 	c *condition
 	a []hook
-	b *buffer	
+	b *buffer
+	//this is unfortunatly a direct access
+	//need to upgrade the hooks system 
+	m map[string]*etcd.Client
 }
-
 func NewSituation() *Situation {
 	return &Situation{}
 }
-
 func (s *Situation) InitSituation() {
 	s.c = NewCondition()
 	s.c.InitCondition()
 	s.b = NewBuffer()
 	s.b.InitBuffer()
+	s.m = make(map[string]*etcd.Client)
 }
-
+func (s *Situation) AddClient (u string,e *etcd.Client) {
+	if u != "" && e != nil {
+		if s.c.utop[u] != nil { //user registered, hem.
+			s.m[u] = e
+		}
+	}
+}
 func (s *Situation) Addutop (u string,p string) {
 	s.c.Addutop(u,p)
 }
-
 func (s *Situation) Addttov (t string,v string) {
 	s.c.Addttov(t,v)
 }
-
 func (s *Situation) Addability (d string,n string) {
 	s.c.Addability(d,n)
 }
-
 func (s *Situation) Addhook(fp hook) {
 	s.a = append(s.a,fp)
 }
-
 func (s *Situation) Configbuffer(scope string, keys []string) {
 	for _, scopekey := range keys {
 		s.b.setkey(scope,scopekey)
 	}
 }
 
+
 type State_engine struct {
 	State []*Situation
 	CurIn *input //current input build from the request
 }
-
 func NewState_engine() *State_engine {
 	return &State_engine{}
 }
-
 func (s *State_engine) InitState_engine() {
+	return
 	//get situation desc and stuff from db
 	//TODO how to get associated etcd??????
-
+/*
 	var setconfig = NewSituation()
 	setconfig.InitSituation()
 	setconfig.Addutop("user","project")
@@ -248,7 +247,7 @@ func (s *State_engine) InitState_engine() {
 	setconfig.Addttov("state","loaded")
 	setconfig.Addability("persistence","user") //if username != servername then have to add a link table
 	setconfig.Addability("persistence","patate")
-	setconfig.Addhook(setconfig.projectconfigsetted)
+	setconfig.Addhook(setconfig.Projectconfigsetted)
 	//setconfig.Addhook(setconfig.jujuisconfigured)
 
 	var jujurunner = NewSituation()
@@ -260,14 +259,14 @@ func (s *State_engine) InitState_engine() {
 	jujurunner.Addability("services","wordpress")
 	buff := []string{"series","cell","version","services","packages"}
 	jujurunner.Configbuffer("config",buff)
-	jujurunner.Addhook(jujurunner.jujuisconfigured) 
-	jujurunner.Addhook(jujurunner.doesprevstateisconfigured)
-	jujurunner.Addhook(jujurunner.run)
+	jujurunner.Addhook(jujurunner.Jujuisconfigured) 
+	jujurunner.Addhook(jujurunner.Doesprevstateisconfigured)
+	jujurunner.Addhook(jujurunner.Run)
 
 	s.Addsituation(setconfig)
 	s.Addsituation(jujurunner)
+*/
 }
-
 func (s *State_engine) Addsituation(sit *Situation) {
 	if sit != nil {
 		s.State = append(s.State,sit)
@@ -328,8 +327,9 @@ func (s *Situation) What(origin string, key string) bool {
 
 /************** ETCD API ***********************/
 
-func get(key string) (string,error) {
-	client := etcd.NewClient() //select the etcd relative to user
+func get(e *etcd.Client, key string) (string,error) {
+	client := e
+
 	resps, err := client.Get(key)
 	if err != nil {
 		return "",err
@@ -346,14 +346,14 @@ func get(key string) (string,error) {
 }
 
 // TODO : this function will get all index from a config value
-func gets(cut_key string) ([]string,error) {
+func gets(e *etcd.Client, cut_key string) ([]string,error) {
 	resp := []string{}
 	echo := ""
 	err := errors.New("")
 	i:=0
 	key := cut_key+strconv.Itoa(i)
 	for {
-		echo, err = get(key)
+		echo, err = get(e, key)
 		if i == 0 && err != nil {
 			fmt.Println("no value indexed", err)
 			return nil, err

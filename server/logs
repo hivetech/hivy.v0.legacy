@@ -1,1 +1,0 @@
-[etcd] 18:03:23.257822 INFO Found node configuration in 'serv_hivy/info'. Ignoring flags [etcd] 18:03:23.259068 WARN the whole cluster dies! restart the cluster [etcd] 18:03:23.259082 INFO etcd server [serv_hivy:http://127.0.0.1:4001] [etcd] 18:03:23.259130 INFO raft server [serv_hivy:127.0.0.1:7001]

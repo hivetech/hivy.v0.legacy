@@ -1,9 +1,9 @@
 {
  "name": "test",
- "raftURL": "http://0.0.0.0:7001",
+ "raftURL": "http://0.0.0.0:8000",
  "etcdURL": "http://0.0.0.0:5000",
  "webURL": "",
- "raftListenHost": "0.0.0.0:7001",
+ "raftListenHost": "0.0.0.0:8000",
  "etcdListenHost": "0.0.0.0:5000",
  "raftTLS": {
   "CertFile": "",

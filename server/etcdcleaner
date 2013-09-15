@@ -1,0 +1,6 @@
+#!/bin/bash
+
+rm -r serv_hivy
+rm -r user
+rm -r patate
+rm logs
