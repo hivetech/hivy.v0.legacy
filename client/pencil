@@ -1,0 +1,53 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+# vim:fenc=utf-8
+#
+# Copyright 2013 Xavier Bruhiere
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+'''pencil
+
+Usage:
+    pencil --version
+    pencil -h | --help
+    pencil login [--user=<name>] [--password=<mdp>]
+    pencil up --app=<name> [--config=<file> | --key=<value>]
+    pencil configure --app=<name> (--config=<file> | --key=<value>)
+    pencil inspect --app=<name>
+
+Options:
+    --version               Show version.
+    -h --help               Show this screen.
+    --app <app>             Run the command against the app named <app>.
+    --user <name>           Login user as provided while signing up
+    --password <mdb>        Login password as provided while signing up
+    --config <file>         YAML style configuration file
+    --key <value>           Single parameter to set
+'''
+
+from docopt import docopt
+#import sys
+
+from libpencil import main
+
+if __name__ == '__main__':
+    args = docopt(__doc__, version='Dokku client, pencil v0.1.2')
+
+    #NOTE For dev mode I wan to see what went wrong
+    #try:
+    main(args)
+    #except:
+    #TODO Custom error handler
+    #sys.exit("** Error running pencil...")
