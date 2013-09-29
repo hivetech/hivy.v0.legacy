@@ -18,46 +18,14 @@
 
 
 import etcd
-import sys
 import yaml
 import os
 import requests
 import clint.textui as textui
 from random import random
 import time
-import inspect
 
-
-def fail(message):
-    textui.colored.red("[{}] ** Error: {}".format(
-        inspect.stack()[1][3], message))
-
-
-def die(message):
-    sys.exit(textui.colored.red("[{}] ** Error: {}".format(
-        inspect.stack()[1][3], message)))
-
-
-def success(message):
-    textui.puts(textui.colored.green(message))
-
-
-def log(message):
-    textui.puts(textui.colored.blue(message))
-
-
-def load_yaml(filepath):
-    return yaml.load(open(filepath, "r"))
-
-
-def store_certificate(certificate, path="/etc/ssl/certs"):
-    '''
-    The provided certificate will be used later to allow etcd transactions.
-    So we need to store it somewhere we can remember.
-    '''
-    cert_name = "ca{}.crt".format(hash('hivy'))
-    with open(os.path.join(path, cert_name), 'w') as fd:
-        fd.write(certificate)
+import utils
 
 
 class Pencil(etcd.Etcd):
@@ -70,17 +38,20 @@ class Pencil(etcd.Etcd):
     password = None
 
     def __init__(self, **kwargs):
-        try:
-            etcd.Etcd.__init__(self)
-        except requests.exceptions.ConnectionError, e:
-            die(e)
-
-        self.project = kwargs.get("project", os.getcwd().split('/')[-1])
+        self.project = kwargs.pop("project", os.getcwd().split('/')[-1])
+        #FIXME kwargs['port'] is for etcd, server port is hard-coded, ip are common
+        self.host = kwargs.get("host", '127.0.0.1')
+        self.port = 8080
 
         if os.path.exists(self.__credentials__):
-            credentials = load_yaml(self.__credentials__)
+            credentials = utils.load_yaml(self.__credentials__)
             self.user = credentials["user"]
             self.password = credentials["password"]
+
+        try:
+            etcd.Etcd.__init__(self, **kwargs)
+        except requests.exceptions.ConnectionError, e:
+            utils.die(e)
 
     def projectpath(self):
         return os.path.join(self.user, self.project)
@@ -106,13 +77,13 @@ class Pencil(etcd.Etcd):
         Deploy configured cell
         '''
         try:
-            #FIXME Hard coded
-            result = requests.get('http://127.0.0.1:8080/deploy',
+            result = requests.get('http://{}:{}/deploy'.format(
+                                  self.host, self.port),
                                   params={'user': self.user,
                                           'project': self.project},
                                   auth=(self.user, self.password))
         except requests.exceptions.ConnectionError, e:
-            die(e)
+            utils.die(e)
         #FIXME If not json output, crash
         return result.json()
 
@@ -126,7 +97,7 @@ class Pencil(etcd.Etcd):
         password to the server, and fetch back a certificate.
         '''
         is_ok = False
-        log("Please submit your Hive credentials")
+        utils.log("Please submit your Hive credentials")
         username = raw_input("\tUsername  ")
         password = raw_input("\tPassword  ")
 
@@ -135,60 +106,18 @@ class Pencil(etcd.Etcd):
         for _ in textui.progress.bar(range(100)):
             time.sleep(random() * 0.02)
         try:
-            #FIXME Hard coded
-            result = requests.get('http://127.0.0.1:8080/login/{}'.
-                                  format(extra), auth=(username, password))
+            print('http://{}:{}/login/{}'.format(self.host, self.port, extra))
+            result = requests.get('http://{}:{}/login/{}'.
+                                  format(self.host, self.port, extra),
+                                  auth=(username, password))
         except requests.exceptions.ConnectionError, e:
-            die(e)
+            utils.die(e)
 
-        success("Successfully logged in.")
         if 'Cacrt' in result.json():
-            log("Certificate provided, storing it.")
-            store_certificate(result.json()['Cacrt'], path=".")
+            utils.success("Successfully logged in.")
+            utils.log("Certificate provided, storing it.")
+            utils.store_certificate(result.json()['Cacrt'], path=".")
             is_ok = True
         else:
-            fail("Login failed: no certificate returned.")
+            utils.fail("Login failed: no certificate returned.")
         return is_ok
-
-
-#TODO save user/project input as default
-def main(args):
-    '''
-    Main entry for final user
-    Use arguments parsed by docopt
-    '''
-
-    c = Pencil(project=args['--app'])
-
-    if args['configure']:
-        if args['--config']:
-            configuration = load_yaml(args['--config'])
-
-            for k, v in configuration.items():
-                if k == 'cells':
-                    services = []
-                    for cell in configuration['cells']:
-                        services.append(cell['charm'])
-                        for k_cell, v_cell in cell.items():
-                            print(c.configure(
-                                c.charmpath(cell['charm']), k_cell, v_cell))
-                    print(c.configure(
-                        c.projectpath(), 'services', ','.join(services)))
-                else:
-                    print(c.configure(c.projectpath(), k, v))
-
-        if args['--key']:
-            keyvalue = args['--key'].split(':')
-            print(c.configure(c.projectpath(), keyvalue[0], keyvalue[1]))
-
-    elif args['up']:
-        if args['--config'] or args['--key']:
-            raise(NotImplementedError)
-        print(c.up())
-
-    elif args['login']:
-        #TODO Use user and/or password if provided
-        print(c.login())
-
-    elif args['inspect']:
-        raise(NotImplementedError)

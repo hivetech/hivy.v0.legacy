@@ -14,12 +14,34 @@ package main
 
 import (
     "os"
+    "os/exec"
 	"net/http"
     "launchpad.net/loggo"
     "github.com/codegangsta/cli"
+
+    "./endpoints"
 )
 
 var log = loggo.GetLogger("hivy.main")
+
+func runEtcd(stop chan bool, name string, directory string, force bool, verbose bool, profiling string) {
+    args := []string{"-n", name, "-d", directory, "--cpuprofile", profiling}
+    if force {
+        args = append(args, "-f")
+    }
+    if verbose {
+        args = append(args, "-v")
+    }
+
+    cmd := exec.Command("etcd", args...)
+    if err := cmd.Start(); err != nil {
+        log.Errorf("[main.runEtcd] %v\n", err)
+        return
+    }
+    //TODO Get some output ?
+    log.Infof("Etcd server successfully started")
+    <- stop
+}
 
 func main() {
     // Command line flags configuration
@@ -29,8 +51,12 @@ func main() {
     app.Version = "0.1.0"
 
     app.Flags = []cli.Flag {
-        cli.BoolFlag{"verbose", "Verbose mode"},
+        cli.BoolFlag{"verbose", "verbose mode"},
         cli.StringFlag{"listen", "127.0.0.1:8080", "url to listen to"},
+        cli.StringFlag{"n", "dafault-name", "the node name (required)"},
+        cli.StringFlag{"d", ".", "the directory to store etcd log and snapshot"},
+        cli.BoolFlag{"f", "force new etcd node configuration if existing is found (WARNING: data loss!)"},
+        cli.StringFlag{"cpuprofile", "", "write cpu profile to file"},
     }
 
     // Main function as defined by the cli package
@@ -42,18 +68,26 @@ func main() {
             log_level = "TRACE"
         }
         loggo.ConfigureLoggers("hivy.main=" + log_level)
-        log.Debugf("Logging level:", loggo.LoggerInfo())
+        log.Debugf("Main logging level:", loggo.LoggerInfo())
         defer loggo.RemoveWriter("hivy.main")
 
-        var endpoints Endpoints
+        // Setup centralized configuration
+        stop := make(chan bool)
+        go runEtcd(stop, c.String("n"), c.String("d"), c.Bool("f"), c.Bool("verbose"), c.String("cpuprofile"))
+        defer func() {stop <- true}()
 
-        log.Infof("Register login service\n")
+        // Available application services
+        var endpoints endpoints.Endpoints
+        log.Infof("Register Login endpoint\n")
         // Login function above will be processed when /login path will be
         // reached by authentified requests
         Register("/login", endpoints.Login)
 
-        log.Infof("Register Deploy service\n")
+        log.Infof("Register Deploy endpoint\n")
         Register("/deploy", endpoints.Deploy)
+
+        log.Infof("Register Dummy endpoint\n")
+        Register("/dummy", endpoints.Dummy)
 
         log.Infof("Hivy interface serving on %s\n", c.String("listen"))
         http.ListenAndServe(c.String("listen"), nil)

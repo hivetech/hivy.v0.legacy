@@ -5,13 +5,16 @@ package main
 
 import (
     "fmt"
+    "path/filepath"
     "database/sql"
+
     _ "github.com/go-sql-driver/mysql"
+    "github.com/coreos/go-etcd/etcd"
 )
 
 // Fetch from mysql 'hive.login' table 'username' hash and, if found, compare
 // it with the given one.
-func CheckCredentials(username string, hash string) (bool, error) {
+func MysqlCheckCredentials(username string, hash string) (bool, error) {
     //FIXME Hard coded
     db, err := sql.Open("mysql", "xavier:boss@/hive")
     if err != nil {
@@ -27,7 +30,7 @@ func CheckCredentials(username string, hash string) (bool, error) {
 	// Prepare statement for reading data
 	stmtOut, err := db.Prepare("SELECT hash FROM logins WHERE username = ?")
 	if err != nil {
-        return false, fmt.Errorf("[db.CheckCredentials::db.Prepare] %v\n", err)
+        return false, fmt.Errorf("[db.MysqlCheckCredentials::db.Prepare] %v\n", err)
 	}
 	defer stmtOut.Close()
 
@@ -35,7 +38,20 @@ func CheckCredentials(username string, hash string) (bool, error) {
     var hash_found string
 	err = stmtOut.QueryRow(username).Scan(&hash_found)
 	if err != nil {
-        return false, fmt.Errorf("[db.CheckCredentials::QueryRow.Scan] %v\n", err)
+        return false, fmt.Errorf("[db.MysqlCheckCredentials::QueryRow.Scan] %v\n", err)
 	}
     return (hash_found == hash), nil
+}
+
+
+func EtcdCheckCredentials(username string, hash string) (bool, error) {
+    etcd.OpenDebug()
+    defer etcd.CloseDebug()
+    storage := etcd.NewClient()
+    // Global settings
+    response, err := storage.Get(filepath.Join("hivy", "credentials", username))
+    if err != nil || len(response) != 1 {
+        return false, fmt.Errorf("[db.EtcdCheckCredentials::c.Get] %v\n", err)
+    }
+    return (hash == response[0].Value), nil
 }

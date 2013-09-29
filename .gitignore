@@ -22,5 +22,12 @@ _testmain.go
 # Gedit :D
 *~
 
+# Runtime
+node*
+profile
 vendor
 ca*
+hivy
+
+# Python
+*.pyc

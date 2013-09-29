@@ -22,25 +22,68 @@
 Usage:
     pencil --version
     pencil -h | --help
-    pencil login [--user=<name>] [--password=<mdp>]
-    pencil up --app=<name> [--config=<file> | --key=<value>]
-    pencil configure --app=<name> (--config=<file> | --key=<value>)
-    pencil inspect --app=<name>
+    pencil login [--host=<ip>] [--port=<port>]
+    pencil up --app=<name> [--config=<file> | --key=<value>] [--host=<ip>] [--port=<port>]
+    pencil configure --app=<name> (--config=<file> | --key=<value>) [--host=<ip>] [--port=<port>]
+    pencil inspect --app=<name> [--host=<ip>] [--port=<port>]
 
 Options:
     --version               Show version.
     -h --help               Show this screen.
     --app <app>             Run the command against the app named <app>.
-    --user <name>           Login user as provided while signing up
-    --password <mdb>        Login password as provided while signing up
-    --config <file>         YAML style configuration file
-    --key <value>           Single parameter to set
+    --config <file>         YAML style configuration file.
+    --key <value>           Single parameter to set.
+    --host <ip>             Centralized configuration manager address [default: 127.0.0.1].
+    --port <port>           Centralized configuration manager port [default: 4001].
 '''
 
 from docopt import docopt
 #import sys
+from libpencil import Pencil
+import utils
 
-from libpencil import main
+
+def main(args):
+    '''
+    Main entry for final user
+    Use arguments parsed by docopt
+    '''
+
+    c = Pencil(project=args['--app'], host=args['--host'], port=args['--port'],
+               follow_leader=True, autostart=True)
+
+    if args['configure']:
+        if args['--config']:
+            configuration = utils.load_yaml(args['--config'])
+
+            for k, v in configuration.items():
+                if k == 'cells':
+                    services = []
+                    for cell in configuration['cells']:
+                        services.append(cell['charm'])
+                        for k_cell, v_cell in cell.items():
+                            print(c.configure(
+                                c.charmpath(cell['charm']), k_cell, v_cell))
+                    print(c.configure(
+                        c.projectpath(), 'services', ','.join(services)))
+                else:
+                    print(c.configure(c.projectpath(), k, v))
+
+        if args['--key']:
+            keyvalue = args['--key'].split(':')
+            print(c.configure(c.projectpath(), keyvalue[0], keyvalue[1]))
+
+    elif args['up']:
+        #TODO: Provided config settings
+        if args['--config'] or args['--key']:
+            raise(NotImplementedError)
+        print(c.up())
+
+    elif args['login']:
+        print(c.login())
+
+    elif args['inspect']:
+        raise(NotImplementedError)
 
 if __name__ == '__main__':
     args = docopt(__doc__, version='Dokku client, pencil v0.1.2')

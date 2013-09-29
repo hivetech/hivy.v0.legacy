@@ -62,7 +62,8 @@ func basicAuthenticate(req *restful.Request, resp *restful.Response, chain *rest
     }
     log.Infof("User %s trying to connect with %s\n", username, passwd)
 
-    ok, err := CheckCredentials(username, encoded)
+    //TODO Manage a way to plug whatever datastore you want, wherever it is
+    ok, err := EtcdCheckCredentials(username, encoded)
     if err != nil {
         log.Errorf("[basicAuthenticate] %v", err)
 		resp.AddHeader("WWW-Authenticate", "Basic realm=Protected Area")
