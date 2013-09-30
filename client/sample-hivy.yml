@@ -9,3 +9,5 @@ cells:
 
     - charm: wordpress
       series: precise
+      relation: wordpress
+      expose: true

@@ -1,81 +1,60 @@
 // Authority package that takes care of user's https requests authentification
 //
-// This package builds a RESTful server checking user's credentials before
-// processing the given callback at the given url path. The Register() function
-// instructs the package this parameters. Login and password are provided
-// through standard http mechanism and currently verified in mysql database
-// after some base64 decoding.
+// This package builds a RESTful server checking user's credentials, and user
+// permissions before processing the given callback at the given url path. The
+// Register() function instructs the package this parameters. Login and
+// password are provided through standard http mechanism and currently verified
+// in etcd database after some base64 decoding.
 package main
 
 import (
-	"github.com/emicklei/go-restful"
-    "fmt"
     "strings"
-    "encoding/base64"
+    "time"
+
+	"github.com/emicklei/go-restful"
 )
+
+type Authority struct {
+    authentification restful.FilterFunction
+    control restful.FilterFunction
+}
+
+func NewAuthority(a restful.FilterFunction, c restful.FilterFunction) *Authority {
+    // Global hook, processed before any service
+    restful.Filter(func(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+        log.Infof("[global-filter (logger)] %s %s\n", req.Request.Method, req.Request.URL)
+        now := time.Now()
+        chain.ProcessFilter(req, resp)
+        log.Infof("[global-filter (timer)] Request processed in %v\n", time.Now().Sub(now))
+    })
+    return &Authority{
+        authentification: a,
+        control: c,
+    }
+}
 
 // When registered to the authority server, user-defined callback function
 // are processed when "path" is reached by authentified requests
 // Example:
-//      authority.Register("/hello", func() {fmt.Println("Hello world")})
-func Register(path string, callback restful.RouteFunction) {
+//      authority.Register("/hello/{world}", func(req, resp) {fmt.Println("Hello world")})
+//TODO Not only GET
+func (a *Authority) RegisterGET(path string, callback restful.RouteFunction) {
+    splitted_path := strings.Split(path, "/")
+
     ws := new(restful.WebService)
-    ws.Path(path).
-        // Json and xml answer format accepted for i/o
-        Consumes(restful.MIME_XML, restful.MIME_JSON).
-        Produces(restful.MIME_JSON, restful.MIME_XML)
+    ws.Path("/" + splitted_path[0]).
+        Consumes("*/*").
+	    Produces(restful.MIME_JSON)
 
-    //FIXME This design prevents from custom parameters. However user and project could be standard options to set
-    // Create pipeline pipeline get-request -> authentification -> callback
-    ws.Route(ws.GET("/{parameter}").Filter(basicAuthenticate).To(callback))
+    pathParameter := ""
+    if splitted_path[1] != "" {
+        pathParameter = "/" + strings.Join(splitted_path[1:], "/")
+    }
+    //FIXME A way to plug any basicAuthenticate
+    // Create pipeline pipeline get-request -> authentification -> authority -> callback
+    ws.Route(ws.GET(pathParameter).
+                Filter(a.authentification).
+                Filter(a.control).
+                To(callback))
     restful.Add(ws)
-}
-
-// Credentials (formatted as user:password) sent throug http are base64 encoded.
-// This function takes it and returns originals username and password.
-func decodeCredentials(encoded string) (string, string, error) {
-    // Decode the original hash
-    data, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		log.Errorf("[decodeCredentials] %v", err)
-		return "", "", fmt.Errorf("[decodeCredentials] %v", err)
-	}
-    log.Debugf("%s => %s\n", encoded, string(data))
-
-    // Separate user and password informations
-    user := strings.Split(string(data), ":")[0]
-    passwd := strings.Split(string(data), ":")[1]
-    return user, passwd, nil
-}
-
-// Intermediate step that will check encoded credentials before processing the received request.
-// This function is explicitely used in Register() as a filter in the request pipeline.
-func basicAuthenticate(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
-    encoded := req.Request.Header.Get("Authorization")[6:]
-
-    username, passwd, err := decodeCredentials(encoded)
-    if err != nil {
-        log.Errorf("Credentials decoding failed (%v)", encoded)
-		resp.AddHeader("WWW-Authenticate", "Basic realm=Protected Area")
-		resp.WriteErrorString(402, "402: Error decoding credentials")
-		return
-    }
-    log.Infof("User %s trying to connect with %s\n", username, passwd)
-
-    //TODO Manage a way to plug whatever datastore you want, wherever it is
-    ok, err := EtcdCheckCredentials(username, encoded)
-    if err != nil {
-        log.Errorf("[basicAuthenticate] %v", err)
-		resp.AddHeader("WWW-Authenticate", "Basic realm=Protected Area")
-		resp.WriteErrorString(403, "403: Error checking credentials")
-        return 
-    }
-    if ! ok {
-        log.Warningf("Authentification failed (%v)", encoded)
-		resp.AddHeader("WWW-Authenticate", "Basic realm=Protected Area")
-		resp.WriteErrorString(401, "401: Not Authorized")
-		return
-	}
-    log.Infof("Authentification granted, processing (%v)", encoded)
-	chain.ProcessFilter(req, resp)
 }

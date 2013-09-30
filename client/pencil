@@ -22,7 +22,7 @@
 Usage:
     pencil --version
     pencil -h | --help
-    pencil login [--host=<ip>] [--port=<port>]
+    pencil login [--user=<name>] [--password=<mdp>] [--host=<ip>] [--port=<port>]
     pencil up --app=<name> [--config=<file> | --key=<value>] [--host=<ip>] [--port=<port>]
     pencil configure --app=<name> (--config=<file> | --key=<value>) [--host=<ip>] [--port=<port>]
     pencil inspect --app=<name> [--host=<ip>] [--port=<port>]
@@ -35,6 +35,8 @@ Options:
     --key <value>           Single parameter to set.
     --host <ip>             Centralized configuration manager address [default: 127.0.0.1].
     --port <port>           Centralized configuration manager port [default: 4001].
+    --user <name>           Username for api login
+    --password <mdp>        Password for api login
 '''
 
 from docopt import docopt
@@ -80,7 +82,7 @@ def main(args):
         print(c.up())
 
     elif args['login']:
-        print(c.login())
+        print(c.login(args['--user'], args['--password']))
 
     elif args['inspect']:
         raise(NotImplementedError)

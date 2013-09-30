@@ -25,8 +25,8 @@ import inspect
 
 
 def fail(message):
-    textui.colored.red("[{}] ** Error: {}".format(
-        inspect.stack()[1][3], message))
+    textui.puts(textui.colored.red("[{}] ** Error: {}".format(
+        inspect.stack()[1][3], message)))
 
 
 def die(message):

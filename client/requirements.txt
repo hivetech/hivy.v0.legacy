@@ -1,2 +1,2 @@
 etcd-py==0.0.2
-clint
+clint==0.3.2

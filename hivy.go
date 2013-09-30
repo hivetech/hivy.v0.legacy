@@ -20,6 +20,7 @@ import (
     "github.com/codegangsta/cli"
 
     "./endpoints"
+    "./filters"
 )
 
 var log = loggo.GetLogger("hivy.main")
@@ -67,31 +68,42 @@ func main() {
             // User wants it more verbose
             log_level = "TRACE"
         }
+        // Central log level configuration
         loggo.ConfigureLoggers("hivy.main=" + log_level)
+        loggo.ConfigureLoggers("hivy.endpoints=" + log_level)
+        loggo.ConfigureLoggers("hivy.filters=" + log_level)
+        loggo.ConfigureLoggers("hivy.security=" + log_level)
         log.Debugf("Main logging level:", loggo.LoggerInfo())
         defer loggo.RemoveWriter("hivy.main")
 
         // Setup centralized configuration
         stop := make(chan bool)
         go runEtcd(stop, c.String("n"), c.String("d"), c.Bool("f"), c.Bool("verbose"), c.String("cpuprofile"))
-        defer func() {stop <- true}()
+        defer func() {
+            log.Infof("[main] Killing etcd process")
+            stop <- true
+        }()
 
+        authority := NewAuthority(filters.BasicAuthenticate, filters.EtcdControl)
         // Available application services
-        var endpoints endpoints.Endpoints
+        var endpoint endpoints.Endpoint
+
         log.Infof("Register Login endpoint\n")
         // Login function above will be processed when /login path will be
         // reached by authentified requests
-        Register("/login", endpoints.Login)
+        authority.RegisterGET("login/{user}", endpoint.Login)
 
         log.Infof("Register Deploy endpoint\n")
-        Register("/deploy", endpoints.Deploy)
+        authority.RegisterGET("deploy/{project}", endpoint.Deploy)
 
+        //FIXME Overflow when "/" is missing
         log.Infof("Register Dummy endpoint\n")
-        Register("/dummy", endpoints.Dummy)
+        authority.RegisterGET("dummy/", endpoint.Dummy)
 
         log.Infof("Hivy interface serving on %s\n", c.String("listen"))
         http.ListenAndServe(c.String("listen"), nil)
     }
 
+    //TODO Intercept CTRL-C
     app.Run(os.Args)
 }

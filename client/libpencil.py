@@ -77,46 +77,50 @@ class Pencil(etcd.Etcd):
         Deploy configured cell
         '''
         try:
-            result = requests.get('http://{}:{}/deploy'.format(
-                                  self.host, self.port),
-                                  params={'user': self.user,
-                                          'project': self.project},
+            result = requests.get('http://{}:{}/deploy/{}'.format(
+                                  self.host, self.port, self.project),
+                                  params={'user': self.user},
                                   auth=(self.user, self.password))
         except requests.exceptions.ConnectionError, e:
             utils.die(e)
-        #FIXME If not json output, crash
-        return result.json()
+        try:
+            return result.json()
+        except:
+            utils.fail(result.content)
+        return {'error': result.content}
 
     def _store_credentials(self, data):
         with open(self.__credentials__, 'w') as fd:
             fd.write(yaml.dump(data, default_flow_style=False))
 
-    def login(self, extra="test"):
+    def login(self, username=None, password=None):
         '''
         Use https internal authentification mechanism to send username and
         password to the server, and fetch back a certificate.
         '''
         is_ok = False
         utils.log("Please submit your Hive credentials")
-        username = raw_input("\tUsername  ")
-        password = raw_input("\tPassword  ")
+        if not username:
+            username = raw_input("\tUsername  ")
+        if not password:
+            password = raw_input("\tPassword  ")
 
         self._store_credentials({'user': username, 'password': password})
 
         for _ in textui.progress.bar(range(100)):
             time.sleep(random() * 0.02)
         try:
-            print('http://{}:{}/login/{}'.format(self.host, self.port, extra))
             result = requests.get('http://{}:{}/login/{}'.
-                                  format(self.host, self.port, extra),
+                                  format(self.host, self.port, username),
                                   auth=(username, password))
         except requests.exceptions.ConnectionError, e:
             utils.die(e)
 
-        if 'Cacrt' in result.json():
+        certificate = result.text
+        if certificate.find("CERTIFICATE") > 0:
             utils.success("Successfully logged in.")
             utils.log("Certificate provided, storing it.")
-            utils.store_certificate(result.json()['Cacrt'], path=".")
+            utils.store_certificate(certificate, path=".")
             is_ok = True
         else:
             utils.fail("Login failed: no certificate returned.")

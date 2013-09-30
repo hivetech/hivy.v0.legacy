@@ -1,9 +1,11 @@
 package endpoints
 
+
 import (
     "fmt"
     "path/filepath"
     "strings"
+    "net/http"
     //"os/exec"
 
     "github.com/coreos/go-etcd/etcd"
@@ -11,14 +13,15 @@ import (
 )
 
 
-func (e *Endpoints) Deploy(req *restful.Request, resp *restful.Response) {
+func (e *Endpoint) Deploy(request *restful.Request, response *restful.Response) {
     // Parameters
     // Context parameters
-    user := req.QueryParameter("user")
-    project := req.QueryParameter("project")
+    //TODO Get it from header
+    user := request.QueryParameter("user")
+    project := request.PathParameter("project")
     if user == "" || project == "" {
         log.Errorf("[deploy] User or project name not provided\n")
-        resp.WriteErrorString(406, "406: Not Acceptable")
+        response.WriteError(http.StatusBadRequest, fmt.Errorf("User or project name not provided"))
         return
     }
 
@@ -26,32 +29,32 @@ func (e *Endpoints) Deploy(req *restful.Request, resp *restful.Response) {
     defer etcd.CloseDebug()
     storage := etcd.NewClient()
     // Global settings
-    response, err := storage.Get(filepath.Join("hivy", "charmstore"))
-    if err != nil || len(response) != 1 {
+    result, err := storage.Get(filepath.Join("hivy", "charmstore"))
+    if err != nil || len(result) != 1 {
         log.Errorf("[deploy] %v\n", err)
-        resp.WriteErrorString(404, "404: Not found")
+        response.WriteError(http.StatusInternalServerError, err)
         return
     }
-    charmstore := response[0].Value
+    charmstore := result[0].Value
 
     // User defined settings
-    response, err = storage.Get(filepath.Join(user, project, "services", ))
-    if err != nil || len(response) != 1 {
+    result, err = storage.Get(filepath.Join(user, project, "services", ))
+    if err != nil || len(result) != 1 {
         log.Errorf("[deploy] %v\n", err)
-        resp.WriteErrorString(404, "404: Not found")
+        response.WriteError(http.StatusInternalServerError, err)
         return
     }
-    services := strings.Split(response[0].Value, ",")
+    services := strings.Split(result[0].Value, ",")
 
     for _, service := range services {
         //FIXME Should every parameters has default value, or handle it there ?
-        response, err = storage.Get(filepath.Join(user, project, service, "series", ))
-        if err != nil || len(response) != 1 {
+        result, err = storage.Get(filepath.Join(user, project, service, "series", ))
+        if err != nil || len(result) != 1 {
             log.Errorf("[deploy] %v\n", err)
-            resp.WriteErrorString(404, "404: Not found")
+            response.WriteError(http.StatusInternalServerError, err)
             return
         }
-        series     := response[0].Value
+        series     := result[0].Value
 
         // Deductions
         //FIXME It does not have to be local
@@ -76,6 +79,9 @@ func (e *Endpoints) Deploy(req *restful.Request, resp *restful.Response) {
          *    return
          *}
          */
+
+         //TODO If /user/project/service/relation = quelquechose, juju add-relation service quelquechose
+         //TODO If /user/project/service/expose = true, juju expose service
     }
-     resp.WriteEntity("{juju: deployed}")
+     response.WriteEntity("{juju: deployed}")
 }

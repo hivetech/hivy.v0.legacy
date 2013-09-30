@@ -1,7 +1,8 @@
 // Authority package that takes care of user's https requests authentification
 //
 // db.go holds login checking methods
-package main
+package security
+
 
 import (
     "fmt"
@@ -11,6 +12,7 @@ import (
     _ "github.com/go-sql-driver/mysql"
     "github.com/coreos/go-etcd/etcd"
 )
+
 
 // Fetch from mysql 'hive.login' table 'username' hash and, if found, compare
 // it with the given one.
@@ -45,11 +47,12 @@ func MysqlCheckCredentials(username string, hash string) (bool, error) {
 
 
 func EtcdCheckCredentials(username string, hash string) (bool, error) {
+    //TODO This is no longer hash but clear passwd for now
     etcd.OpenDebug()
     defer etcd.CloseDebug()
     storage := etcd.NewClient()
     // Global settings
-    response, err := storage.Get(filepath.Join("hivy", "credentials", username))
+    response, err := storage.Get(filepath.Join("hivy/security", username, "password"))
     if err != nil || len(response) != 1 {
         return false, fmt.Errorf("[db.EtcdCheckCredentials::c.Get] %v\n", err)
     }
