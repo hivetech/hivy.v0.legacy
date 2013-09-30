@@ -19,9 +19,15 @@ _cgo_export.*
 
 _testmain.go
 
-*.exe
-
 # Gedit :D
 *~
 
+# Runtime
+node*
+profile
+vendor
+ca*
+hivy
 
+# Python
+*.pyc

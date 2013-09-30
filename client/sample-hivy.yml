@@ -1,5 +1,13 @@
-series: precise
-cell: hivelab
-version: latest
-services: [mysql, wordpress]
-packages: [zsh, vim]
+project: hivy
+cells: 
+    - charm: hivelab
+      version: latest
+      series: precise
+
+    - charm: mysql
+      series: quantal
+
+    - charm: wordpress
+      series: precise
+      relation: wordpress
+      expose: true
