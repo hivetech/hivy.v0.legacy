@@ -19,13 +19,13 @@ import (
     "launchpad.net/loggo"
     "github.com/codegangsta/cli"
 
-    "./endpoints"
-    "./filters"
+    "github.com/hivetech/hivy/endpoints"
+    "github.com/hivetech/hivy/filters"
 )
 
 var log = loggo.GetLogger("hivy.main")
 
-func runEtcd(stop chan bool, name string, directory string, force bool, verbose bool, profiling string) {
+func RunEtcd(stop chan bool, name string, directory string, force bool, verbose bool, profiling string) {
     args := []string{"-n", name, "-d", directory, "--cpuprofile", profiling}
     if force {
         args = append(args, "-f")
@@ -43,6 +43,19 @@ func runEtcd(stop chan bool, name string, directory string, force bool, verbose 
     log.Infof("Etcd server successfully started")
     <- stop
 }
+
+
+func SetupLog(verbose bool) {
+    log_level := "WARNING"
+    if verbose {log_level = "TRACE"}
+    // Central log level configuration
+    loggo.ConfigureLoggers("hivy.main=" + log_level)
+    loggo.ConfigureLoggers("hivy.endpoints=" + log_level)
+    loggo.ConfigureLoggers("hivy.filters=" + log_level)
+    loggo.ConfigureLoggers("hivy.security=" + log_level)
+    log.Debugf("Main logging level:", loggo.LoggerInfo())
+}
+
 
 func main() {
     // Command line flags configuration
@@ -63,22 +76,12 @@ func main() {
     // Main function as defined by the cli package
     app.Action = func(c *cli.Context) {
         // Current logger configuration
-        log_level := "WARNING"
-        if c.Bool("verbose") {
-            // User wants it more verbose
-            log_level = "TRACE"
-        }
-        // Central log level configuration
-        loggo.ConfigureLoggers("hivy.main=" + log_level)
-        loggo.ConfigureLoggers("hivy.endpoints=" + log_level)
-        loggo.ConfigureLoggers("hivy.filters=" + log_level)
-        loggo.ConfigureLoggers("hivy.security=" + log_level)
-        log.Debugf("Main logging level:", loggo.LoggerInfo())
+        SetupLog(c.Bool("verbose"))
         defer loggo.RemoveWriter("hivy.main")
 
         // Setup centralized configuration
         stop := make(chan bool)
-        go runEtcd(stop, c.String("n"), c.String("d"), c.Bool("f"), c.Bool("verbose"), c.String("cpuprofile"))
+        go RunEtcd(stop, c.String("n"), c.String("d"), c.Bool("f"), c.Bool("verbose"), c.String("cpuprofile"))
         defer func() {
             log.Infof("[main] Killing etcd process")
             stop <- true

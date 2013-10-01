@@ -105,8 +105,6 @@ class Pencil(etcd.Etcd):
         if not password:
             password = raw_input("\tPassword  ")
 
-        self._store_credentials({'user': username, 'password': password})
-
         for _ in textui.progress.bar(range(100)):
             time.sleep(random() * 0.02)
         try:
@@ -119,6 +117,8 @@ class Pencil(etcd.Etcd):
         certificate = result.text
         if certificate.find("CERTIFICATE") > 0:
             utils.success("Successfully logged in.")
+            self._store_credentials({'user': username, 'password': password})
+
             utils.log("Certificate provided, storing it.")
             utils.store_certificate(certificate, path=".")
             is_ok = True

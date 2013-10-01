@@ -10,7 +10,7 @@ import (
 	"github.com/emicklei/go-restful"
     "github.com/coreos/go-etcd/etcd"
 
-    "../security"
+    "github.com/hivetech/hivy/security"
 )
 
 

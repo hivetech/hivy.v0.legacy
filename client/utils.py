@@ -43,7 +43,15 @@ def log(message):
 
 
 def load_yaml(filepath):
-    return yaml.load(open(filepath, "r"))
+    try:
+        return yaml.load(open(filepath, "r"))
+    except yaml.scanner.ScannerError, e:
+        fail(e)
+        return {'error': e}
+    except IOError, e:
+        fail(e)
+        return {'error': e}
+    return {}
 
 
 def store_certificate(certificate, path="/etc/ssl/certs"):
@@ -52,5 +60,7 @@ def store_certificate(certificate, path="/etc/ssl/certs"):
     So we need to store it somewhere we can remember.
     '''
     cert_name = "ca-{}.crt".format(hash('hivy'))
+    if not os.path.isdir(path):
+        raise ValueError("Path must exist")
     with open(os.path.join(path, cert_name), 'w') as fd:
         fd.write(certificate)

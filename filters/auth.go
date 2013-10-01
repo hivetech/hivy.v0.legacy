@@ -7,7 +7,7 @@ import (
 
 	"github.com/emicklei/go-restful"
 
-    "../security"
+    "github.com/hivetech/hivy/security"
 )
 
 

@@ -8,8 +8,7 @@ First make sure [etcd](https://github.com/coreos/etcd) is installed and availabl
 
 ```bash
 $ git clone https://github.com/hivetech/hivy.go
-$ go get github.com/mattn/gom
-$ gom install && gom build
+$ make
 $ ./hivy --help
 ```
 TODO: Automatic user creation
