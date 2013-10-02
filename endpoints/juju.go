@@ -13,10 +13,16 @@ import (
 )
 
 
+// Juju deploy <charm> endpoint. It deploys the given project for the given
+// user, regarding preferences stored in etcd, which are:
+//  * charms path if local
+//  * charms to be deployed
+//  * For each:
+//      * Based machine image
 func (e *Endpoint) Deploy(request *restful.Request, response *restful.Response) {
     // Parameters
     // Context parameters
-    //TODO Get it from header
+    //TODO Get user from header, using security.Credentials()
     user := request.QueryParameter("user")
     project := request.PathParameter("project")
     if user == "" || project == "" {

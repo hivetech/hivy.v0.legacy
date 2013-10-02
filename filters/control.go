@@ -14,6 +14,8 @@ import (
 )
 
 
+// Callback part of the request pipeline. It check in etcd if the received
+// request is allowed for the given user.
 func EtcdControl(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
     username, _, _ := security.Credentials(request)
     method := fmt.Sprintf("%s:%s", request.Request.Method, request.Request.URL)
@@ -23,6 +25,7 @@ func EtcdControl(request *restful.Request, response *restful.Response, chain *re
     defer etcd.CloseDebug()
     storage := etcd.NewClient()
 
+    // Permission needs /hivy/security/{user}/methods/{method} to exist
     result, err := storage.Get(filepath.Join("hivy/security", username, "methods", param_less_method))
     fmt.Println(result)
     if err != nil {

@@ -15,6 +15,7 @@ import (
 // This function is explicitely used in Register() as a filter in the request pipeline.
 func BasicAuthenticate(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
     //TODO Instead of clear passwor I could stick with encoded or other crypted solution
+    // Use base64 decoding to extract from http header user credentials 
     username, passwd, err := security.Credentials(req)
     if err != nil {
         log.Errorf("[basicAuthenticate] %v\n", err)

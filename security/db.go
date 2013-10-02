@@ -46,6 +46,7 @@ func MysqlCheckCredentials(username string, hash string) (bool, error) {
 }
 
 
+// Query the etcd database to compare given and stored hashes.
 func EtcdCheckCredentials(username string, hash string) (bool, error) {
     //TODO This is no longer hash but clear passwd for now
     etcd.OpenDebug()

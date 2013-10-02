@@ -1,10 +1,10 @@
-// Authority package that takes care of user's https requests authentification
+// Authority takes care of user's https requests permission
 //
-// This package builds a RESTful server checking user's credentials, and user
-// permissions before processing the given callback at the given url path. The
-// Register() function instructs the package this parameters. Login and
-// password are provided through standard http mechanism and currently verified
-// in etcd database after some base64 decoding.
+// It checks user's credentials, and user permissions before processing the
+// given callback at the given url path. The Register() function instructs the
+// package this parameters. Login and password are provided through standard
+// http mechanism and currently verified in etcd database after some base64
+// decoding.
 package main
 
 import (
@@ -14,11 +14,14 @@ import (
 	"github.com/emicklei/go-restful"
 )
 
+// Main entry point
 type Authority struct {
     authentification restful.FilterFunction
     control restful.FilterFunction
 }
 
+// Constructor. Needs one function handling user/pass authetification, and one
+// function handling method permission for the user who requested it.
 func NewAuthority(a restful.FilterFunction, c restful.FilterFunction) *Authority {
     // Global hook, processed before any service
     restful.Filter(func(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
@@ -33,25 +36,29 @@ func NewAuthority(a restful.FilterFunction, c restful.FilterFunction) *Authority
     }
 }
 
-// When registered to the authority server, user-defined callback function
+// When registered to hivy, user-defined callback function
 // are processed when "path" is reached by authentified requests
 // Example:
-//      authority.Register("/hello/{world}", func(req, resp) {fmt.Println("Hello world")})
-//TODO Not only GET
+//      authority.RegisterGET("/hello/{world}", func(req, resp) {fmt.Println("Hello world")})
 func (a *Authority) RegisterGET(path string, callback restful.RouteFunction) {
+    //TODO Not only GET
+
+    // We need to separate root path from parameters path
     splitted_path := strings.Split(path, "/")
 
+    // Instanciate a new route at /{path} that returns json data
     ws := new(restful.WebService)
     ws.Path("/" + splitted_path[0]).
         Consumes("*/*").
 	    Produces(restful.MIME_JSON)
 
+    // Get back together path parameters
     pathParameter := ""
     if splitted_path[1] != "" {
         pathParameter = "/" + strings.Join(splitted_path[1:], "/")
     }
-    //FIXME A way to plug any basicAuthenticate
-    // Create pipeline pipeline get-request -> authentification -> authority -> callback
+    // Create pipeline get-request, according hooks defined at instanciation time 
+    // endpoint request -> authentification -> method permission -> callback
     ws.Route(ws.GET(pathParameter).
                 Filter(a.authentification).
                 Filter(a.control).

@@ -5,7 +5,7 @@ PROJECT="github.com/hivetech/hivy"
 
 all: install extras-dev test
 
-test: check-server check-client
+tests: check-server check-client
 	@echo "Done."
 
 # Run tests.
@@ -47,5 +47,8 @@ watch:
 	ps -ef | grep etcd | grep -v etcd || etcd -n master -d node -v &
 	looper -debug
 	killall etcd
+
+doc:
+	godoc -http=:6060
 
 .PHONY: install format check

@@ -40,7 +40,7 @@ Options:
 '''
 
 from docopt import docopt
-#import sys
+import sys
 from libpencil import Pencil
 import utils
 
@@ -91,8 +91,8 @@ if __name__ == '__main__':
     args = docopt(__doc__, version='Dokku client, pencil v0.1.2')
 
     #NOTE For dev mode I wan to see what went wrong
-    #try:
-    main(args)
-    #except:
-    #TODO Custom error handler
-    #sys.exit("** Error running pencil...")
+    try:
+        main(args)
+    except:
+        #TODO Custom error handler
+        sys.exit("** Error running pencil...")
