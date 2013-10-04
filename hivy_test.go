@@ -40,7 +40,20 @@ func TestRunner(t *testing.T) {
 
 
 func (t *testSuite) TestLogger() {
-    SetupLog(true)
-    SetupLog(false)
-    defer loggo.RemoveWriter("hivy.main")
+    //NOTE Logfile is not implemented yet
+    filename := ""
+    verbose := true
+    not_verbose := false
+
+    err := SetupLog(verbose, filename)
+    t.Nil(err)
+    err = SetupLog(not_verbose, filename)
+    t.Nil(err)
+    loggo.RemoveWriter("hivy.main")
+}
+
+
+func (t *testSuite) TestVersion() {
+    version := Version()
+    t.Equal("0.1.0", version)
 }

@@ -23,7 +23,7 @@ Batteries inluded
 
 * Deadly easy to use, build serious applications in minutes
 * Http standard authentification
-* Method permission per user
+* Permission per user per Method
 * Plug and play endpoints, authentification and permission methods
 * But not only, up to 2 filters actually before endpoint processing
 * Secured, higly-available and centralized configuration storage
@@ -43,16 +43,16 @@ $ make tests
 $ ./hivy --help
 ```
 
-
 Usage
 -----
 
-Endpoints with admin rights to create users and set default configurations are on the way !
-
 ```bash
+$ make init  # Create admin user and set default hivy configuration
 $ ./hivy -d node -n master --verbose
 $ # In another terminal
+$ curl --user admin:root http://127.0.0.1:8080/createuser?user=name&pass=pass&group=admin
 $ curl --user name:pass http://127.0.0.1:8080/dummy  # Test your installation
+$ # With the provided client
 $ ./client/pencil login
 $ ./client/pencil configure --app quantrade --config client/sample-hivy.yml
 $ ./client/pencil up --app quantrade
@@ -66,7 +66,16 @@ To add a new service to your app:
   methods: ``a := NewAuthority(authMethod, permissionMethod)``
 * Finally, still in your main(), register your service: ``a.RegisterGET("/path/with/{parameter}", endpoint.YourMethod)``
 
-You can see as well where to insert custom authentification, permission or any filter method.
+You can see as well where to insert custom authentification, permission or any
+filter method. Those must be defined in the filters directory and have the
+following signature: 
+
+```go
+func YourFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+    // Filter whatever you want here
+    chain.ProcessFilter(request, response)
+}
+```
 
 
 Current API
@@ -75,10 +84,19 @@ Current API
 Here are listed currently supported methods. With the ./hivy application, all
 need user:pass authentification and permissions:
 
-```
+```bash
+# Admin action methods
+GET /createuser?user={user}&pass={pass}&group={group}
+# User action methods
 GET /dummy/
-GET /login/{user}
-GET /deploy/{project}?user={user}
+GET /help?method={method}  # method is optionnal
+GET /login/
+GET /juju/status
+GET /juju/deploy?project={project}
+
+# Configuration methods
+#TODO This is on a different port (4001) for now
+GET /v1/keys/{ topology below }
 ```
 
 

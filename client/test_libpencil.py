@@ -67,7 +67,7 @@ class TestUtils(unittest.TestCase):
     def test_up(self):
         feedback = self.c.up()
         #FIXME Should be json
-        assert isinstance(feedback, unicode)
+        assert isinstance(feedback, dict)
 
     def test__store_credentials(self):
         self.c.__credentials__ = "test-credentials.yml"

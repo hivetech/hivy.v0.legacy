@@ -22,6 +22,7 @@
 Usage:
     pencil --version
     pencil -h | --help
+    pencil sos [--method=<method>]
     pencil login [--user=<name>] [--password=<mdp>] [--host=<ip>] [--port=<port>]
     pencil up --app=<name> [--config=<file> | --key=<value>] [--host=<ip>] [--port=<port>]
     pencil configure --app=<name> (--config=<file> | --key=<value>) [--host=<ip>] [--port=<port>]
@@ -37,6 +38,7 @@ Options:
     --port <port>           Centralized configuration manager port [default: 4001].
     --user <name>           Username for api login
     --password <mdp>        Password for api login
+    --method <method>       Fetch help on method
 '''
 
 from docopt import docopt
@@ -84,6 +86,11 @@ def main(args):
     elif args['login']:
         print(c.login(args['--user'], args['--password']))
 
+    elif args['sos']:
+        if not args['--method']:
+            args["--method"] = ""
+        c.help(args['--method'])
+
     elif args['inspect']:
         raise(NotImplementedError)
 
@@ -91,8 +98,8 @@ if __name__ == '__main__':
     args = docopt(__doc__, version='Dokku client, pencil v0.1.2')
 
     #NOTE For dev mode I wan to see what went wrong
-    try:
-        main(args)
-    except:
-        #TODO Custom error handler
-        sys.exit("** Error running pencil...")
+    #try:
+    main(args)
+    #except:
+    #TODO Custom error handler
+    #sys.exit("** Error running pencil...")

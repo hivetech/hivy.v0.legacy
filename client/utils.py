@@ -24,6 +24,14 @@ import clint.textui as textui
 import inspect
 
 
+class PencilError(Exception):
+    def __init__(self, **kwargs):
+        super(PencilError, self).__init__(kwargs)
+        self.code = kwargs.get('errorCode')
+        self.message = kwargs.get('message')
+        self.cause = kwargs.get('cause')
+
+
 def fail(message):
     textui.puts(textui.colored.red("[{}] ** Error: {}".format(
         inspect.stack()[1][3], message)))

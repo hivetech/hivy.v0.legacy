@@ -16,9 +16,9 @@ import (
 
 // Callback part of the request pipeline. It check in etcd if the received
 // request is allowed for the given user.
-func EtcdControl(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+func EtcdControlMethod(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
     username, _, _ := security.Credentials(request)
-    method := fmt.Sprintf("%s:%s", request.Request.Method, request.Request.URL)
+    method := fmt.Sprintf("%s%s", request.Request.Method, request.Request.URL)
     param_less_method := strings.Split(method, "?")[0]
 
     etcd.OpenDebug()

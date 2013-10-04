@@ -1,13 +1,12 @@
-project: hivy
+project: blog
+services: hivelab,mysql,wordpress
 cells: 
-    - charm: hivelab
+    - charm: wordpress
       version: latest
       series: precise
+      relation: mysql
+      expose: true
 
     - charm: mysql
+      version: latest
       series: quantal
-
-    - charm: wordpress
-      series: precise
-      relation: wordpress
-      expose: true
