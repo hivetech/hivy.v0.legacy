@@ -55,7 +55,7 @@ func EtcdCheckCredentials(username string, hash string) (bool, error) {
     // Global settings
     response, err := storage.Get(filepath.Join("hivy/security", username, "password"))
     if err != nil || len(response) != 1 {
-        return false, fmt.Errorf("[db.EtcdCheckCredentials::c.Get] %v\n", err)
+        return false, fmt.Errorf("[db.EtcdCheckCredentials::storage.Get] %v\n", err)
     }
     return (hash == response[0].Value), nil
 }

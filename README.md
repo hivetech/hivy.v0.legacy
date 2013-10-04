@@ -23,7 +23,7 @@ Batteries inluded
 
 * Deadly easy to use, build serious applications in minutes
 * Http standard authentification
-* Method permission per user
+* Permission per user per Method
 * Plug and play endpoints, authentification and permission methods
 * But not only, up to 2 filters actually before endpoint processing
 * Secured, higly-available and centralized configuration storage
@@ -43,16 +43,16 @@ $ make tests
 $ ./hivy --help
 ```
 
-
 Usage
 -----
 
-Endpoints with admin rights to create users and set default configurations are on the way !
-
 ```bash
+$ make init  # Create admin user and set default hivy configuration
 $ ./hivy -d node -n master --verbose
 $ # In another terminal
+$ curl --user admin:root http://127.0.0.1:8080/createuser?user=name&pass=pass&group=admin
 $ curl --user name:pass http://127.0.0.1:8080/dummy  # Test your installation
+$ # With the provided client
 $ ./client/pencil login
 $ ./client/pencil configure --app quantrade --config client/sample-hivy.yml
 $ ./client/pencil up --app quantrade
@@ -86,14 +86,16 @@ need user:pass authentification and permissions:
 
 ```bash
 # Admin action methods
-GET /createuser?user={user}&pass={pass}
+GET /createuser?user={user}&pass={pass}&group={group}
 # User action methods
 GET /dummy/
-GET /help/{method}  # method is optionnal
+GET /help?method={method}  # method is optionnal
 GET /login/
-GET /juju/{command}/{project}  # With command = deploy
+GET /juju/status
+GET /juju/deploy?project={project}
 
 # Configuration methods
+#TODO This is on a different port (4001) for now
 GET /v1/keys/{ topology below }
 ```
 

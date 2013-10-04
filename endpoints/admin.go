@@ -5,7 +5,7 @@ import (
     "fmt"
     "net/http"
     "path/filepath"
-    //"time"
+    "time"
 
     "github.com/coreos/go-etcd/etcd"
 	"github.com/emicklei/go-restful"
@@ -15,10 +15,15 @@ import (
 func (e *Endpoint) CreateUser(request *restful.Request, response *restful.Response) {
     user := request.QueryParameter("user")
     pass := request.QueryParameter("pass")
+    //TODO group specific permissions
+    group := request.QueryParameter("group")
     if user == "" || pass == "" {
         log.Errorf("[Juju] User or pass not provided\n")
         response.WriteError(http.StatusBadRequest, fmt.Errorf("User or pass not provided"))
         return
+    }
+    if group == "" {
+        group = "basic"
     }
 
     etcd.OpenDebug()
@@ -32,21 +37,38 @@ func (e *Endpoint) CreateUser(request *restful.Request, response *restful.Respon
     }
     log.Debugf("%v\n", feedback)
 
-    feedback, err = db.Set(filepath.Join("hivy/security", user, "methods", "GET/login"), Allowed, 0)
-    if err != nil {
-        response.WriteError(http.StatusInternalServerError, err)
-        return
+    basic_allowed_methods := []string {
+        "GET/login",
+        "GET/dummy",
+        "GET/juju/status", "GET/juju/deploy",
+        "GET/help",
     }
-    log.Debugf("%v\n", feedback)
+    admin_allowed_methods := []string {
+        "GET/createuser",
+        "GET/juju/bootstrap",
+    }
+
+    allowed_methods := basic_allowed_methods
+    if group == "admin" {
+        allowed_methods = append(allowed_methods, admin_allowed_methods...)
+    }
+
+    for _, method := range allowed_methods {
+        feedback, err = db.Set(filepath.Join("hivy/security", user, "methods", method), Allowed, 0)
+        if err != nil {
+            response.WriteError(http.StatusInternalServerError, err)
+            return
+        }
+    }
 
     response.WriteEntity(Json(`{"create": 0}`))
 }
 
 
 func (e *Endpoint) Help(request *restful.Request, response *restful.Response) {
-    method := request.PathParameter("method")
-    //json := Json(fmt.Sprintf(`{"time": %s}`, time.Now()))
-    json := EmptyJSON()
+    method := request.QueryParameter("method")
+    json := Json(fmt.Sprintf(`{"time": "%s"}`, time.Now()))
+    //json := EmptyJSON()
     if method == "juju" {
         json.Set("title", "Hivy Juju API")
         json.Set("body", Juju_help)

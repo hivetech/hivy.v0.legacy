@@ -2,27 +2,27 @@
 # vim:ft=make
 
 PROJECT="github.com/hivetech/hivy"
+CHARMSTORE?="${HOME}/charms"
 
 all: install extras-dev test
 
-tests: check-server check-client coverage 
+tests: init check-server check-client coverage 
 	@echo "Done."
 
 coverage:
 	#FIXME Does not prevent etcd to run
-	ps -ef | grep etcd | grep -v etcd || etcd -n master -d node -v &
-	#FIXME gocov test github.com/hivetech/hivy | gocov report
-	gocov test github.com/hivetech/hivy/security | gocov report
+	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
+	gocov test github.com/hivetech/hivy github.com/hivetech/hivy/filters github.com/hivetech/hivy/endpoints github.com/hivetech/hivy/security | gocov report
 	killall etcd
 
 # Run tests.
 check-server:
-	ps -ef | grep etcd | grep -v etcd || etcd -n master -d node -v &
+	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
 	go test -test.v
 	killall etcd
 
 check-client:
-	ps -ef | grep hivy | grep -v hivy || ./hivy -n master -d node --verbose &
+	pgrep --count hivy > /dev/null || ./hivy -n master -d node --verbose &
 	nosetests --verbose --with-progressive client
 	killall hivy
 
@@ -35,13 +35,13 @@ local-install:
 	gom build
 
 install:
-	#mkdir build
-	#git clone https://github.com/coreos/etcd.git build/etcd
-	#./build/etcd/build
-	#test -f ./build/etcd/etcd && cp ./build/etcd/etcd ${GOPATH}/bin
+	git clone https://github.com/coreos/etcd.git /tmp/etcd
+	cd /tmp/etcd/ && ./build
+	test -f /tmp/etcd/etcd && cp /tmp/etcd/etcd ${GOPATH}/bin
+	cd -
 
-	apt-get install python-pip
-	pip install -r client/requirements.txt
+	sudo apt-get install python-pip
+	sudo pip install -U -r client/requirements.txt
 	cat Gomfile | sed -e s/gom\ // | xargs go get -u
 	go install
 
@@ -57,8 +57,15 @@ extras-dev:
 	go get -u github.com/axw/gocov/gocov
 
 watch:
-	ps -ef | grep etcd | grep -v etcd || etcd -n master -d node -v &
+	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
 	looper -debug
+	killall etcd
+
+init:
+	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/charmstore -d value="${CHARMSTORE}"
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/password -d value="root"
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/createuser -d value="1"
 	killall etcd
 
 doc:

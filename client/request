@@ -1,0 +1,10 @@
+#! /bin/bash
+
+IP=127.0.0.1
+PORT=8080
+USER=xav
+PASS=boss
+REQUEST=$1
+
+# https://github.com/jkbr/httpie
+http --auth $USER:$PASS http://$IP:$PORT/$REQUEST

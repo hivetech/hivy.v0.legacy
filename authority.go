@@ -42,6 +42,7 @@ func (a *Authority) RegisterGET(path string, callback restful.RouteFunction) {
 
     // Instanciate a new route at /{path} that returns json data
     ws := new(restful.WebService)
+    //TODO To be coherent with etcd, path sould begin with /v1/methods/
     ws.Path("/" + splitted_path[0]).
         Consumes("*/*").
 	    Produces(restful.MIME_JSON)

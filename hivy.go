@@ -54,7 +54,6 @@ func RunEtcd(stop chan bool, name string, directory string, force bool, verbose 
     log.Infof("Etcd server successfully started")
     // Wait for stop instruction
     <- stop
-    //TODO Should end etcd process ?
 }
 
 
@@ -127,12 +126,12 @@ func main() {
         // Login function above will be processed when /login path will be
         // reached by authentified requests
         authority.RegisterGET("login/", endpoint.Login)
-        authority.RegisterGET("juju/{command}/{project}", endpoint.Juju)
+        authority.RegisterGET("juju/{command}", endpoint.Juju)
         //FIXME Overflow when "/" is missing
         authority.RegisterGET("dummy/", endpoint.Dummy)
         //TODO Delete user using DELETE http method
         authority.RegisterGET("createuser/", endpoint.CreateUser)
-        authority.RegisterGET("help/{method}", endpoint.Help)
+        authority.RegisterGET("help/", endpoint.Help)
 
         log.Infof("Setup exit method")
         ctrl_c := make(chan os.Signal, 1)
