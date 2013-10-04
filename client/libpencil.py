@@ -39,7 +39,8 @@ class Pencil(etcd.Etcd):
 
     def __init__(self, **kwargs):
         self.project = kwargs.pop("project", os.getcwd().split('/')[-1])
-        #FIXME kwargs['port'] is for etcd, server port is hard-coded, ip are common
+        #FIXME kwargs['port'] is for etcd, server port is hard-coded,
+        #      ip are common
         self.host = kwargs.get("host", '127.0.0.1')
         self.port = 8080
 
@@ -59,6 +60,20 @@ class Pencil(etcd.Etcd):
     def charmpath(self, name):
         return os.path.join(self.projectpath(), name)
 
+    def _hivy_request(self, path, data={}):
+        try:
+            result = requests.get('http://{}:{}/{}'.format(
+                                  self.host, self.port, path),
+                                  params=data,
+                                  auth=(self.user, self.password))
+        except requests.exceptions.ConnectionError, e:
+            utils.die(e)
+        try:
+            return result.json()
+        except:
+            utils.fail(result.content)
+        return {'error': result.content}
+
     def configure(self, namespace, key, value):
         #TODO if isinstance(value, dict):
         if isinstance(value, list):
@@ -72,26 +87,16 @@ class Pencil(etcd.Etcd):
             raise(e)
         return feedback
 
+    def _store_credentials(self, data):
+        with open(self.__credentials__, 'w') as fd:
+            fd.write(yaml.dump(data, default_flow_style=False))
+
     def up(self):
         '''
         Deploy configured cell
         '''
-        try:
-            result = requests.get('http://{}:{}/deploy/{}'.format(
-                                  self.host, self.port, self.project),
-                                  params={'user': self.user},
-                                  auth=(self.user, self.password))
-        except requests.exceptions.ConnectionError, e:
-            utils.die(e)
-        try:
-            return result.json()
-        except:
-            utils.fail(result.content)
-        return {'error': result.content}
-
-    def _store_credentials(self, data):
-        with open(self.__credentials__, 'w') as fd:
-            fd.write(yaml.dump(data, default_flow_style=False))
+        return self._hivy_request('/juju/deploy/{}'.format(self.project),
+                                  {'user': self.user})
 
     def login(self, username=None, password=None):
         '''
@@ -108,8 +113,8 @@ class Pencil(etcd.Etcd):
         for _ in textui.progress.bar(range(100)):
             time.sleep(random() * 0.02)
         try:
-            result = requests.get('http://{}:{}/login/{}'.
-                                  format(self.host, self.port, username),
+            result = requests.get('http://{}:{}/login/'.
+                                  format(self.host, self.port),
                                   auth=(username, password))
         except requests.exceptions.ConnectionError, e:
             utils.die(e)
@@ -123,5 +128,10 @@ class Pencil(etcd.Etcd):
             utils.store_certificate(certificate, path=".")
             is_ok = True
         else:
-            utils.fail("Login failed: no certificate returned.")
+            utils.fail("Login failed: no certificate returned. ({})".format(
+                certificate))
         return is_ok
+
+    def help(self, api=""):
+        #TODO Pretty printing
+        print(self._hivy_request("/help/{}".format(api)))

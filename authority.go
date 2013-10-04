@@ -1,10 +1,3 @@
-// Authority takes care of user's https requests permission
-//
-// It checks user's credentials, and user permissions before processing the
-// given callback at the given url path. The Register() function instructs the
-// package this parameters. Login and password are provided through standard
-// http mechanism and currently verified in etcd database after some base64
-// decoding.
 package main
 
 import (
@@ -41,6 +34,7 @@ func NewAuthority(a restful.FilterFunction, c restful.FilterFunction) *Authority
 // Example:
 //      authority.RegisterGET("/hello/{world}", func(req, resp) {fmt.Println("Hello world")})
 func (a *Authority) RegisterGET(path string, callback restful.RouteFunction) {
+    log.Infof("Register " + path + " endpoint\n")
     //TODO Not only GET
 
     // We need to separate root path from parameters path

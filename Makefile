@@ -5,8 +5,15 @@ PROJECT="github.com/hivetech/hivy"
 
 all: install extras-dev test
 
-tests: check-server check-client
+tests: check-server check-client coverage 
 	@echo "Done."
+
+coverage:
+	#FIXME Does not prevent etcd to run
+	ps -ef | grep etcd | grep -v etcd || etcd -n master -d node -v &
+	#FIXME gocov test github.com/hivetech/hivy | gocov report
+	gocov test github.com/hivetech/hivy/security | gocov report
+	killall etcd
 
 # Run tests.
 check-server:
@@ -28,6 +35,11 @@ local-install:
 	gom build
 
 install:
+	#mkdir build
+	#git clone https://github.com/coreos/etcd.git build/etcd
+	#./build/etcd/build
+	#test -f ./build/etcd/etcd && cp ./build/etcd/etcd ${GOPATH}/bin
+
 	apt-get install python-pip
 	pip install -r client/requirements.txt
 	cat Gomfile | sed -e s/gom\ // | xargs go get -u
@@ -42,6 +54,7 @@ extras-dev:
 	go get -u github.com/gophertown/looper
 	go get -u launchpad.net/gocheck
 	go get -u github.com/remogatto/prettytest
+	go get -u github.com/axw/gocov/gocov
 
 watch:
 	ps -ef | grep etcd | grep -v etcd || etcd -n master -d node -v &

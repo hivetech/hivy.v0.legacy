@@ -66,7 +66,16 @@ To add a new service to your app:
   methods: ``a := NewAuthority(authMethod, permissionMethod)``
 * Finally, still in your main(), register your service: ``a.RegisterGET("/path/with/{parameter}", endpoint.YourMethod)``
 
-You can see as well where to insert custom authentification, permission or any filter method.
+You can see as well where to insert custom authentification, permission or any
+filter method. Those must be defined in the filters directory and have the
+following signature: 
+
+```go
+func YourFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+    // Filter whatever you want here
+    chain.ProcessFilter(request, response)
+}
+```
 
 
 Current API
@@ -75,10 +84,17 @@ Current API
 Here are listed currently supported methods. With the ./hivy application, all
 need user:pass authentification and permissions:
 
-```
+```bash
+# Admin action methods
+GET /createuser?user={user}&pass={pass}
+# User action methods
 GET /dummy/
-GET /login/{user}
-GET /deploy/{project}?user={user}
+GET /help/{method}  # method is optionnal
+GET /login/
+GET /juju/{command}/{project}  # With command = deploy
+
+# Configuration methods
+GET /v1/keys/{ topology below }
 ```
 
 

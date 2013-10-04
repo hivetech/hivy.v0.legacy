@@ -1,19 +1,7 @@
-// Router between user requests and Hive jobs. The client sends authentified
-// http requests to reach endpoints defined in the endpoints directory.
-// Through the process a centralized configuration server, backed by etcd,
-// stores user-defined and hive settings, and a central authority is asked for
-// methods permissions.
-// Communication protocol used here is REST.
-//
-// Usage example:
-//      $ go run hivy --verbose --listen 0.0.0.0:8080
-// Client usage example
-//      $ GET -C name:pass http://localhost:8080/login/name
-//      $ curl --user name:pass http://127.0.0.1:8080/login/name
-//      $ python -m "import requests; requests.get('http://127.0.0.1:8080/login/name', auth=('user', 'pass')'"
 package main
 
 import (
+    "fmt"
     "os"
     "os/exec"
     "os/signal"
@@ -27,10 +15,19 @@ import (
 
 var log = loggo.GetLogger("hivy.main")
 
+const (
+    verbose_log_level loggo.Level = loggo.TRACE
+    default_log_level loggo.Level = loggo.WARNING
+    current_version string = "0.1.0"
+    // Change here to absolute or relative path if etcd is not in your $PATH
+    etcd_bin string = "etcd"
+)
+
 // Etcd is an http-based key-value storage that holds user and system
 // configuration. Here is spawned a new instance, restricted to relevant
 // command line flags for hivy application.
 func RunEtcd(stop chan bool, name string, directory string, force bool, verbose bool, profiling string) {
+    //TODO End it properly: http://blog.labix.org/2011/10/09/death-of-goroutines-under-control
     // etcd command line arguments
     args := []string{"-n", name, "-d", directory, "--cpuprofile", profiling}
     if force {
@@ -39,6 +36,13 @@ func RunEtcd(stop chan bool, name string, directory string, force bool, verbose 
     if verbose {
         args = append(args, "-v")
     }
+
+    etcd_path, err := exec.LookPath(etcd_bin)
+	if err != nil {
+		log.Criticalf("[RunEtcd] Unable to find etcd program")
+        return
+	}
+	log.Debugf("[RunEtcd] etcd program available at %s\n", etcd_path)
 
     // Spawn the process
     cmd := exec.Command("etcd", args...)
@@ -55,26 +59,32 @@ func RunEtcd(stop chan bool, name string, directory string, force bool, verbose 
 
 
 // Set application's modules log level
-func SetupLog(verbose bool) {
-    app_modules := []string{
+func SetupLog(verbose bool, logfile string) error {
+    //TODO logfile handler
+    var app_modules = []string{
         "hivy.main",
         "hivy.endpoints",
         "hivy.filters",
         "hivy.security",
     }
-
-    log_level := "WARNING"
-    if verbose {log_level = "TRACE"}
+    log_level := default_log_level
+    if verbose {log_level = verbose_log_level}
 
     // Central log level configuration
     for _, module := range app_modules {
-        loggo.ConfigureLoggers(module + "=" + log_level)
+        if err := loggo.ConfigureLoggers(module + "=" + log_level.String()); err != nil {
+            return fmt.Errorf("configure loggers")
+        }
     }
+
     log.Debugf("Logging level:", loggo.LoggerInfo())
+    return nil
 }
 
 
-func Version() string { return "0.1.0" }
+//TODO Read git tag to make it automatic
+// Modest accessor
+func Version() string { return current_version }
 
 
 func main() {
@@ -87,6 +97,7 @@ func main() {
     // The 2 firsts are hivy's, the lasts are etcd's
     app.Flags = []cli.Flag {
         cli.BoolFlag{"verbose", "verbose mode"},
+        cli.StringFlag{"logfile", "", "If specified, will write log there"},
         cli.StringFlag{"listen", "127.0.0.1:8080", "url to listen to"},
         cli.StringFlag{"n", "dafault-name", "the node name (required)"},
         cli.StringFlag{"d", ".", "the directory to store etcd log and snapshot"},
@@ -97,7 +108,7 @@ func main() {
     // Main function as defined by the cli package
     app.Action = func(c *cli.Context) {
         // Current logger configuration
-        SetupLog(c.Bool("verbose"))
+        SetupLog(c.Bool("verbose"), c.String("logfile"))
         defer loggo.RemoveWriter("hivy.main")
 
         // Setup centralized configuration
@@ -108,22 +119,20 @@ func main() {
         }()
 
         //TODO Makes it possible to omit one or all method
-        authority := NewAuthority(filters.BasicAuthenticate, filters.EtcdControl)
+        authority := NewAuthority(filters.BasicAuthenticate, filters.EtcdControlMethod)
         // Available application services
         //NOTE This is currently useless
         var endpoint endpoints.Endpoint
 
-        log.Infof("Register Login endpoint\n")
         // Login function above will be processed when /login path will be
         // reached by authentified requests
-        authority.RegisterGET("login/{user}", endpoint.Login)
-
-        log.Infof("Register Deploy endpoint\n")
-        authority.RegisterGET("deploy/{project}", endpoint.Deploy)
-
+        authority.RegisterGET("login/", endpoint.Login)
+        authority.RegisterGET("juju/{command}/{project}", endpoint.Juju)
         //FIXME Overflow when "/" is missing
-        log.Infof("Register Dummy endpoint\n")
         authority.RegisterGET("dummy/", endpoint.Dummy)
+        //TODO Delete user using DELETE http method
+        authority.RegisterGET("createuser/", endpoint.CreateUser)
+        authority.RegisterGET("help/{method}", endpoint.Help)
 
         log.Infof("Setup exit method")
         ctrl_c := make(chan os.Signal, 1)
