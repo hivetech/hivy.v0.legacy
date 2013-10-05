@@ -47,10 +47,12 @@ func MysqlCheckCredentials(username string, hash string) (bool, error) {
 
 
 // Query the etcd database to compare given and stored hashes.
-func EtcdCheckCredentials(username string, hash string) (bool, error) {
+func EtcdCheckCredentials(username, hash string, debug bool) (bool, error) {
     //TODO This is no longer hash but clear passwd for now
-    etcd.OpenDebug()
-    defer etcd.CloseDebug()
+    if debug {
+        etcd.OpenDebug()
+        defer etcd.CloseDebug()
+    }
     storage := etcd.NewClient()
     // Global settings
     response, err := storage.Get(filepath.Join("hivy/security", username, "password"))

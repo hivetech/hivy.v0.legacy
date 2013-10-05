@@ -181,8 +181,10 @@ func (e *Endpoint) Juju(request *restful.Request, response *restful.Response) {
 	}
 	log.Debugf("[bootstrap] juju program available at %s\n", juju_path)
 
-    etcd.OpenDebug()
-    defer etcd.CloseDebug()
+    if request.QueryParameter("debug") == "true" {
+        etcd.OpenDebug()
+        defer etcd.CloseDebug()
+    }
     database := etcd.NewClient()
 
     if command == "deploy" {

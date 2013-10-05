@@ -10,7 +10,7 @@ tests: check coverage
 	@echo "Done."
 
 coverage:
-	gocov test github.com/hivetech/hivy github.com/hivetech/hivy/filters github.com/hivetech/hivy/endpoints github.com/hivetech/hivy/security | gocov report
+	gocov test github.com/hivetech/hivy github.com/hivetech/hivy/endpoints github.com/hivetech/hivy/security | gocov report
 
 check:
 	go build

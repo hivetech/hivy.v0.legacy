@@ -10,7 +10,6 @@ import (
     "github.com/codegangsta/cli"
 
     "github.com/hivetech/hivy/endpoints"
-    "github.com/hivetech/hivy/filters"
 )
 
 var log = loggo.GetLogger("hivy.main")
@@ -63,7 +62,6 @@ func SetupLog(verbose bool, logfile string) error {
     var app_modules = []string{
         "hivy.main",
         "hivy.endpoints",
-        "hivy.filters",
         "hivy.security",
     }
     log_level := default_log_level
@@ -118,7 +116,7 @@ func main() {
         }()
 
         //TODO Makes it possible to omit one or all method
-        authority := NewAuthority(filters.BasicAuthenticate, filters.EtcdControlMethod)
+        authority := NewAuthority(BasicAuthenticate, EtcdControlMethod)
         // Available application services
         //NOTE This is currently useless
         var endpoint endpoints.Endpoint
