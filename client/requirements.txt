@@ -1,4 +1,0 @@
-etcd-py
-clint
-nose
-nose-progressive

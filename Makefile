@@ -4,27 +4,17 @@
 PROJECT="github.com/hivetech/hivy"
 CHARMSTORE?="${HOME}/charms"
 
-all: install extras-dev test
+all: install extras-dev
 
-tests: init check-server check-client coverage 
+tests: check coverage 
 	@echo "Done."
 
 coverage:
-	#FIXME Does not prevent etcd to run
-	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
 	gocov test github.com/hivetech/hivy github.com/hivetech/hivy/filters github.com/hivetech/hivy/endpoints github.com/hivetech/hivy/security | gocov report
-	killall etcd
 
-# Run tests.
-check-server:
-	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
-	go test -test.v
-	killall etcd
-
-check-client:
-	pgrep --count hivy > /dev/null || ./hivy -n master -d node --verbose &
-	nosetests --verbose --with-progressive client
-	killall hivy
+check:
+	go build
+	go test -short -gocheck.v
 
 # Install packages required to develop Juju and run tests.
 local-install:
@@ -40,8 +30,6 @@ install:
 	test -f /tmp/etcd/etcd && cp /tmp/etcd/etcd ${GOPATH}/bin
 	cd -
 
-	sudo apt-get install python-pip
-	sudo pip install -U -r client/requirements.txt
 	cat Gomfile | sed -e s/gom\ // | xargs go get -u
 	go install
 
@@ -50,6 +38,9 @@ run:
 	./hivy -d node -n master --verbose
 
 extras-dev:
+	sudo apt-get install python-pip
+	sudo pip install -U httpie
+
 	go get -u github.com/mattn/gom
 	go get -u github.com/gophertown/looper
 	go get -u launchpad.net/gocheck

@@ -1,6 +1,8 @@
 Hivy
 ====
 
+![Unide](https://raw.github.com/hivetech/hivy/develop/logo-unide.png)
+
 Hivy is yet an other RESTful interface between http requests and jobs. But it
 comes with it's own, modular and simple way to do that and ease the building
 of such a popular and efficient web interface.
@@ -17,6 +19,16 @@ cluster database.
 Out of the box, and because it is part of the Unide project, Hivy exposes
 awesome [juju](https://juju.ubuntu.com/) commands to authentified remote users.
 Powerful IT infrasctructure building accessible from robust but simple http requests !
+
+
+Status
+------
+
+[![Build Status](https://drone.io/github.com/hivetech/hivy/status.png)](https://drone.io/github.com/hivetech/hivy/latest)
+[![Coverage Status](https://coveralls.io/repos/hivetech/hivy/badge.png)](https://coveralls.io/r/hivetech/hivy)
+
+**Attention!** Project is in an early alpha, and under heavy development.
+
 
 Batteries inluded
 -----------------
@@ -36,9 +48,10 @@ Suit-up
 
 First make sure [etcd binary](https://github.com/coreos/etcd/releases/) is available in your $PATH.
 
-```bash
+```console
 $ git clone https://github.com/hivetech/hivy.go
 $ make
+$ make init
 $ make tests
 $ ./hivy --help
 ```
@@ -46,7 +59,7 @@ $ ./hivy --help
 Usage
 -----
 
-```bash
+```console
 $ make init  # Create admin user and set default hivy configuration
 $ ./hivy -d node -n master --verbose
 $ # In another terminal
@@ -84,7 +97,7 @@ Current API
 Here are listed currently supported methods. With the ./hivy application, all
 need user:pass authentification and permissions:
 
-```bash
+```console
 # Admin action methods
 GET /createuser?user={user}&pass={pass}&group={group}
 # User action methods

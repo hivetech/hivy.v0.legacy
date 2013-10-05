@@ -36,13 +36,15 @@ func testCheck(dbCallback dbBridgeTest, hash string, c *C) {
 }
 
 
-func (s *SecuritySuite) TestMysqlCheck(c *C) {
-    hash := "eGF2OmJvc3M="
-    testCheck(MysqlCheckCredentials, hash, c)
-}
-
-
-func (s *SecuritySuite) TestEtcdCheck(c *C) {
-    hash := "boss"
-    testCheck(EtcdCheckCredentials, hash, c)
-}
+/*
+ *func (s *SecuritySuite) TestMysqlCheck(c *C) {
+ *    hash := "eGF2OmJvc3M="
+ *    testCheck(MysqlCheckCredentials, hash, c)
+ *}
+ *
+ *
+ *func (s *SecuritySuite) TestEtcdCheck(c *C) {
+ *    hash := "boss"
+ *    testCheck(EtcdCheckCredentials, hash, c)
+ *}
+ */
