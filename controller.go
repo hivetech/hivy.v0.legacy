@@ -11,6 +11,11 @@ import (
 )
 
 
+const (
+    MAX_MACHINES int = 5
+)
+
+
 type Controller struct {
     db *etcd.Client
     max_machines int
@@ -22,7 +27,7 @@ func NewController(user string, debug bool) *Controller {
     if debug {etcd.OpenDebug()}
     return &Controller{
         db           : etcd.NewClient(),
-        max_machines : 5,
+        max_machines : MAX_MACHINES,
         user         : user,
     }
 }

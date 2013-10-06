@@ -14,6 +14,7 @@ coverage:
 
 check:
 	go build
+	go test -i
 	go test -short -gocheck.v
 
 # Install packages required to develop Juju and run tests.
@@ -48,9 +49,7 @@ extras-dev:
 	go get -u github.com/axw/gocov/gocov
 
 watch:
-	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
 	looper -debug
-	killall etcd
 
 init:
 	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
