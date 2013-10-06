@@ -30,6 +30,7 @@ profile
 vendor
 ca*
 hivy
+*.log
 
 # Python
 *.pyc

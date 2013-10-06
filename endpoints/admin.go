@@ -26,11 +26,21 @@ func (e *Endpoint) CreateUser(request *restful.Request, response *restful.Respon
         group = "basic"
     }
 
-    etcd.OpenDebug()
-    defer etcd.CloseDebug()
+    //TODO A verbose parameter in endpoint object ?
+    if request.QueryParameter("debug") == "true" {
+        etcd.OpenDebug()
+        defer etcd.CloseDebug()
+    }
     db := etcd.NewClient()
 
     feedback, err := db.Set(filepath.Join("hivy/security", user, "password"), pass, 0)
+    if err != nil {
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+    log.Debugf("%v\n", feedback)
+
+    feedback, err = db.Set(filepath.Join("hivy/security", user, "ressources/machines"), "0", 0)
     if err != nil {
         response.WriteError(http.StatusInternalServerError, err)
         return

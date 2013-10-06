@@ -1,7 +1,7 @@
+![Unide](https://raw.github.com/hivetech/hivy/develop/logo-unide.png)
+
 Hivy
 ====
-
-![Unide](https://raw.github.com/hivetech/hivy/develop/logo-unide.png)
 
 Hivy is yet an other RESTful interface between http requests and jobs. But it
 comes with it's own, modular and simple way to do that and ease the building
@@ -25,9 +25,9 @@ Status
 ------
 
 [![Build Status](https://drone.io/github.com/hivetech/hivy/status.png)](https://drone.io/github.com/hivetech/hivy/latest)
-[![Coverage Status](https://coveralls.io/repos/hivetech/hivy/badge.png)](https://coveralls.io/r/hivetech/hivy)
+[![Coverage Status](https://coveralls.io/repos/hivetech/hivy/badge.png?branch=develop)](https://coveralls.io/r/hivetech/hivy?branch=develop)
 
-**Attention!** Project is in an early alpha, and under heavy development.
+**Attention** Project is in an *early alpha*, and under heavy development.
 
 
 Batteries inluded
@@ -40,7 +40,7 @@ Batteries inluded
 * But not only, up to 2 filters actually before endpoint processing
 * Secured, higly-available and centralized configuration storage
 * Mysql-ready for users logins
-* Complete but low-dependency python client provided
+* Debug client provided, dead easy to write one
 * 21st century tests
 
 Suit-up
@@ -51,6 +51,7 @@ First make sure [etcd binary](https://github.com/coreos/etcd/releases/) is avail
 ```console
 $ git clone https://github.com/hivetech/hivy.go
 $ make
+# That's done, let's check and prepare for further digging
 $ make init
 $ make tests
 $ ./hivy --help
@@ -103,9 +104,9 @@ GET /createuser?user={user}&pass={pass}&group={group}
 # User action methods
 GET /dummy/
 GET /help?method={method}  # method is optionnal
-GET /login/
-GET /juju/status
-GET /juju/deploy?project={project}
+GET /login?debug={debug}
+GET /juju/status?debug={debug}
+GET /juju/deploy?project={project}&debug={debug}
 
 # Configuration methods
 #TODO This is on a different port (4001) for now
@@ -128,6 +129,9 @@ http://127.0.0.1:4001/v1/keys/hivy/setting1
                                                   methods/method1
                                                           ...
                                                           methodN
+                                                  ressources/ressource1
+                                                             ...
+                                                             ressourceN
                              /user1
                              ...
                              /userN/project1
