@@ -7,6 +7,7 @@ import (
     "launchpad.net/loggo"
     "github.com/codegangsta/cli"
 
+	"github.com/emicklei/go-restful"
     "github.com/hivetech/hivy/endpoints"
 )
 
@@ -20,16 +21,18 @@ func hivy(url string, profile bool) {
 
     // Login function above will be processed when /login path will be
     // reached by authentified requests
-    router.Map("GET", "login/", endpoints.Login)
-    router.Map("GET", "juju/{command}", endpoints.Juju)
-    router.Map("GET", "dummy", endpoints.Dummy)
-    //TODO associate one path with several METHOD:ENDPOINT
+    router.Map("GET login/", endpoints.Login)
+    router.Map("GET juju/{command}", endpoints.Juju)
+    router.Map("GET dummy", endpoints.Dummy)
+    router.Map("GET help/", endpoints.Help)
+
     //TODO Below line should be allowed (currently method permission forbids it)
     //router.Map("PUT", "user/{user-id}", endpoints.CreateUser)
-    router.Map("PUT", "create/", endpoints.CreateUser)
-    //FIXME can't user same root path
-    router.Map("DELETE", "delete/", endpoints.DeleteUser)
-    router.Map("GET", "help/", endpoints.Help)
+    var userMap = map[string]restful.RouteFunction{
+        "PUT user/": endpoints.CreateUser,
+        "DELETE user/": endpoints.DeleteUser,
+    }
+    router.MultiMap(userMap)
 
     log.Infof("Hivy interface serving on %s\n", url)
     http.ListenAndServe(url, nil)

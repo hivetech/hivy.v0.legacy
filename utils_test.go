@@ -6,6 +6,7 @@ import (
 
     "launchpad.net/loggo"
     "github.com/remogatto/prettytest"
+    "launchpad.net/gocheck"
 )
 
 
@@ -28,11 +29,11 @@ func (t *testSuite) TestLogger() {
     //NOTE Logfile is not implemented yet
     filename := ""
     verbose := true
-    not_verbose := false
+    notVerbose := false
 
     err := SetupLog(verbose, filename)
     t.Nil(err)
-    err = SetupLog(not_verbose, filename)
+    err = SetupLog(notVerbose, filename)
     t.Nil(err)
     loggo.RemoveWriter("hivy.main")
 }
@@ -41,4 +42,17 @@ func (t *testSuite) TestLogger() {
 func (t *testSuite) TestVersion() {
     version := Version()
     t.Equal("0.1.0", version)
+}
+
+
+func (t *testSuite) TestAllTheSame() {
+    testArray := []string{"same", "same", "same"}
+    common, err := allTheSame(testArray)
+    t.Check(err, gocheck.IsNil)
+    t.Check(common, gocheck.Equals, "same")
+
+    testWrongArray := []string{"same", "different", "same"}
+    common, err = allTheSame(testWrongArray)
+    t.Check(err, gocheck.NotNil)
+    t.Check(common, gocheck.Equals, "")
 }

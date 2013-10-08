@@ -69,30 +69,32 @@ $ ./hivy --help
 $ ./hivy -d node -n master --verbose
 
 $ # In another terminal
-$ curl --user admin:root http://127.0.0.1:8080/createuser?user=name&pass=pass&group=admin
+$ curl --user admin:root http://127.0.0.1:8080/user?user=name&pass=pass&group=admin -X PUT
 $ curl --user name:pass http://127.0.0.1:8080/dummy  # Test your installation
 $ # With the provided clients
-$ ./scripts/get help
-$ ./scripts/get login?user={user}&pass={pass}
-$ ./scripts/get juju/deploy?project={project}&debug=true
+$ ./scripts/request help
+$ ./scripts/request login?user={user}&pass={pass}
+$ ./scripts/request juju/deploy?project={project}&debug=true
 
 $ # Configuration management
-$ ./scripts/set hivy/security/{user}/password secret
-$ ./scripts/get {user}/{project}/services
-$ ./scripts/set {user}/{project}/{charm}/series precise
-$ ./scripts/set {user}/{project}/{charm}/expose True
+$ ./scripts/config set hivy/security/{user}/password secret
+$ ./scripts/config get {user}/{project}/services
+$ ./scripts/config set {user}/{project}/{charm}/series precise
+$ ./scripts/config set {user}/{project}/{charm}/expose True
 ```
 
-To add a new service to your app:
+To add a new service to our app:
 
 * Implement in endpoints package a method with this signature: ``func (e
   *Endpoint) YourMethod(request *restful.Request, response *restful.Response)``
-* In your main(), create an authority with authentification and permission
+* Create an authority with authentification and permission
   methods: ``a := NewAuthority(authMethod, permissionMethod)``
-* Finally, still in your main(), register your service: ``a.RegisterGET("/path/with/{parameter}", endpoint.YourMethod)``
+* Finally, map the service: ``a.Map("METHOD /path/with/{parameter}", endpoint.YourMethod)``
 
-You can see as well where to insert custom authentification, permission or any
-filter method. Those must have the following signature: 
+It is possible to register at a same path multiple endpoints to multiple http
+methods. Check out hivy.go to take a glance at it.  We can see as well where to
+insert custom authentification, permission or any filter method. Those must
+have the following signature: 
 
 ```go
 func YourFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
@@ -110,8 +112,8 @@ need user:pass authentification and permissions:
 
 ```console
 # Admin action methods
-PUT /create?user={user}&pass={pass}&group={group}
-DELETE /delete?user={user}
+PUT /user?user={user}&pass={pass}&group={group}
+DELETE /user?user={user}
 # User action methods
 GET /dummy/
 GET /help?method={method}  # method is optionnal

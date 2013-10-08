@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "os"
     "os/exec"
     "os/signal"
@@ -111,4 +112,17 @@ func CatchInterruption(stop chan bool) {
             os.Exit(0)
         }
     }()
+}
+
+
+func allTheSame(values []string) (string, error) {
+    for i, v := range values {
+        if i == (len(values) - 1) {
+            break
+        } else if v != values[i + 1] {
+            return "", fmt.Errorf("different strings in the array")
+        }
+    }
+    // If we arrived here, all values are identical
+    return values[0], nil
 }
