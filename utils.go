@@ -1,7 +1,6 @@
 package main
 
 import (
-    "fmt"
     "os"
     "os/exec"
     "os/signal"
@@ -19,17 +18,28 @@ const (
 // Etcd is an http-based key-value storage that holds user and system
 // configuration. Here is spawned a new instance, restricted to relevant
 // command line flags for hivy application.
-func RunEtcd(stop chan bool, name string, directory string, force bool, verbose bool, profiling string) {
+func RunEtcd(stop chan bool, name, directory, client_ip, raft_ip, cluster_ip string, 
+             force, verbose bool, profile bool) {
     //TODO End it properly: http://blog.labix.org/2011/10/09/death-of-goroutines-under-control
     // etcd command line arguments
-    args := []string{"-n", name, "-d", directory, "--cpuprofile", profiling}
-    if force {
-        args = append(args, "-f")
+    args := []string{
+        "-n", name, 
+        "-d", directory, 
+        "-c", client_ip, 
+        "-s", raft_ip, 
     }
-    if verbose {
-        args = append(args, "-v")
+    if force { args = append(args, "-f") }
+    if force { args = append(args, "-f") }
+    if profile { 
+        args = append(args, "--cpuprofile") 
+        args = append(args, "./profile/etcd-profile") 
+    }
+    if cluster_ip != "" { 
+        args = append(args, "-C") 
+        args = append(args, cluster_ip) 
     }
 
+    log.Warningf("%v\n", args)
     etcd_path, err := exec.LookPath(etcd_bin)
 	if err != nil {
 		log.Criticalf("[RunEtcd] Unable to find etcd program")
@@ -97,7 +107,7 @@ func CatchInterruption(stop chan bool) {
         for sig := range ctrl_c {
             log.Infof("[main] Server interrupted (%v), cleaning...", sig)
             // End etcd instance
-            stop <- true
+            if stop != nil { stop <- true }
             os.Exit(0)
         }
     }()

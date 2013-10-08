@@ -11,6 +11,8 @@ package endpoints
 
 import (
     "launchpad.net/loggo"
+    "net/http"
+
 	"github.com/emicklei/go-restful"
     "github.com/bitly/go-simplejson"
 )
@@ -48,6 +50,22 @@ Will return an help message on the method if provided, global otherwise.
 )
 
 
+func HTTPError(writer *restful.Response, err error, httpStatus int) {
+    log.Errorf("[HttpError] %v\n", err)
+    writer.WriteError(httpStatus, err)
+}
+
+
+func HTTPInternalError(writer *restful.Response, err error) {
+    HTTPError(writer, err, http.StatusInternalServerError)
+}
+
+
+func HTTPBadRequestError(writer *restful.Response, err error) {
+    HTTPError(writer, err, http.StatusBadRequest)
+}
+
+
 func Json(data string) *simplejson.Json {
     json, err := simplejson.NewJson([]byte(data))
     if err != nil { panic(err) }
@@ -67,10 +85,9 @@ func EmptyJSON() *simplejson.Json {
  *       endpoint: Dummy
  * }
  */
-type Endpoint struct {}
 
 
 // hello-world endpoint, for demo and test purpose
-func (e *Endpoint) Dummy(request *restful.Request, response *restful.Response) {
+func Dummy(request *restful.Request, response *restful.Response) {
      response.WriteEntity(Json(`{"you": "dummy"}`))
 }

@@ -12,7 +12,7 @@ import (
 )
 
 
-func formatMethod(request *restful.Request) string {
+func FormatMethod(request *restful.Request) string {
     method := fmt.Sprintf("%s%s", request.Request.Method, request.Request.URL)
     // Consider GET/juju/deploy/*
     if strings.Contains(method, "deploy") {
@@ -36,12 +36,12 @@ func EtcdControlMethod(request *restful.Request, response *restful.Response, cha
 
     controller := NewController(user, debug)
 
-    if err := controller.Update(formatMethod(request)); err != nil {
+    if err := controller.Update(FormatMethod(request)); err != nil {
         response.WriteError(http.StatusInternalServerError, err)
         return
     }
 
-    is_allowed, err := controller.CheckMethod(formatMethod(request))
+    is_allowed, err := controller.CheckMethod(FormatMethod(request))
     if err != nil {
         response.WriteError(http.StatusInternalServerError, err)
         return

@@ -5,7 +5,6 @@ import (
     "fmt"
     "path/filepath"
     "strings"
-    "net/http"
     "os/exec"
     "time"
 
@@ -18,7 +17,7 @@ import (
 
 
 const (
-    juju_bin string = "juju"
+    jujuBin string = "juju"
 )
 
 
@@ -37,11 +36,11 @@ func status(juju, user string) (*simplejson.Json, error) {
     if err != nil {
        return EmptyJSON(), err
     }
-    json_output, err := simplejson.NewJson(output)
+    jsonOutput, err := simplejson.NewJson(output)
     if err != nil {
        return EmptyJSON(), err
     }
-    return json_output, err
+    return jsonOutput, err
 }
 
 
@@ -129,14 +128,14 @@ func deploy(juju string, db *etcd.Client, user string, project string) (*simplej
         if err == nil && len(result) == 1 {
             log.Debugf("%v\n", result)
             //FIXME needs name or service ?
-            relation_target := fmt.Sprintf("%s-%s-%s", user, project, result[0].Value)
-            log.Infof("Adding relation between %s and %s", name, relation_target)
-            relation = append(relation, fmt.Sprintf("%s->%s", name, relation_target))
+            relationTarget := fmt.Sprintf("%s-%s-%s", user, project, result[0].Value)
+            log.Infof("Adding relation between %s and %s", name, relationTarget)
+            relation = append(relation, fmt.Sprintf("%s->%s", name, relationTarget))
             
             /*
              *cmd := exec.Command("juju",
              *                    "add-relation",
-             *                    name, relation_target)
+             *                    name, relationTarget)
              *if output, err := cmd.CombinedOutput(); err != nil {
              *   return EmptyJSON(), err
              *} else {
@@ -160,26 +159,24 @@ func deploy(juju string, db *etcd.Client, user string, project string) (*simplej
 //  * charms to be deployed
 //  * For each:
 //      * Based machine image
-func (e *Endpoint) Juju(request *restful.Request, response *restful.Response) {
+func Juju(request *restful.Request, response *restful.Response) {
     //TODO: status and bootstrap does not need project, so this should be a query parameter
     // Parameters
     // Context parameters
     user, _, err := security.Credentials(request)
     if err != nil {
-        log.Errorf("[Juju] %v\n", err)
-        response.WriteError(http.StatusInternalServerError, err)
+        HTTPInternalError(response, err)
         return
     }
     command := request.PathParameter("command")
 
     // Check if juju is available for use
-    juju_path, err := exec.LookPath(juju_bin)
+    jujuPath, err := exec.LookPath(jujuBin)
 	if err != nil {
-		log.Criticalf("[boostrap] Unable to find juju program (%s)", juju_bin)
-        response.WriteError(http.StatusInternalServerError, err)
+        HTTPInternalError(response, err)
         return
 	}
-	log.Debugf("[bootstrap] juju program available at %s\n", juju_path)
+	log.Debugf("[bootstrap] juju program available at %s\n", jujuPath)
 
     if request.QueryParameter("debug") == "true" {
         etcd.OpenDebug()
@@ -189,28 +186,25 @@ func (e *Endpoint) Juju(request *restful.Request, response *restful.Response) {
 
     if command == "deploy" {
         project := request.QueryParameter("project")
-        report, err := deploy(juju_path, database, user, project)
+        report, err := deploy(jujuPath, database, user, project)
         if err != nil {
-            log.Errorf("[Juju] %v\n", err)
-            response.WriteError(http.StatusInternalServerError, err)
+            HTTPInternalError(response, err)
         } else {
             response.WriteEntity(report)
         }
         return
     } else if command == "status" {
-        report, err := status(juju_path, user)
+        report, err := status(jujuPath, user)
         if err != nil {
-            log.Errorf("[Juju] %v\n", err)
-            response.WriteError(http.StatusInternalServerError, err)
+            HTTPInternalError(response, err)
         } else {
             response.WriteEntity(report)
         }
         return
     } else if command == "bootstrap" {
-        report, err := bootstrap(juju_path)
+        report, err := bootstrap(jujuPath)
         if err != nil {
-            log.Errorf("[Juju] %v\n", err)
-            response.WriteError(http.StatusInternalServerError, err)
+            HTTPInternalError(response, err)
         } else {
             response.WriteEntity(report)
         }

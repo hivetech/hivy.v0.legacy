@@ -6,16 +6,26 @@ CHARMSTORE?="${HOME}/charms"
 
 all: install extras-dev
 
-tests: check coverage 
+update: install extras-dev
+
+tests: check coverage style
 	@echo "Done."
 
 coverage:
+	@echo "\t[ make ] ===========>  Coverage"
 	gocov test github.com/hivetech/hivy github.com/hivetech/hivy/endpoints github.com/hivetech/hivy/security | gocov report
 
 check:
 	go build
 	go test -i
+	@echo -e "\t[ make ] ===========>  Tests"
 	go test -short -gocheck.v
+
+style:
+	@echo "\t[ make ] ===========>  Style.govet"
+	find . -name "*.go" | xargs go tool vet -all -v
+	#@echo "\t[ make ] ===========>  Style.golint"
+	#find . -name "*.go" | xargs golint -min_confidence=0.8 
 
 # Install packages required to develop Juju and run tests.
 local-install:
@@ -36,17 +46,21 @@ install:
 
 run:
 	go build
-	./hivy -d node -n master --verbose
+	./hivy -d node -n master --verbose --profile
 
 extras-dev:
 	sudo apt-get install python-pip
 	sudo pip install -U httpie
+
+	npm install -g underscore-cli
 
 	go get -u github.com/mattn/gom
 	go get -u github.com/gophertown/looper
 	go get -u launchpad.net/gocheck
 	go get -u github.com/remogatto/prettytest
 	go get -u github.com/axw/gocov/gocov
+	go get -u github.com/golang/lint/golint
+	go get github.com/davecheney/profile
 
 watch:
 	looper -debug

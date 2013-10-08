@@ -3,7 +3,6 @@ package endpoints
 
 import (
     "fmt"
-    "net/http"
     "path/filepath"
     "time"
 
@@ -12,19 +11,9 @@ import (
 )
 
 
-func (e *Endpoint) CreateUser(request *restful.Request, response *restful.Response) {
+// DeleteUser removes from etcd storage evrything related to the given user-id
+func DeleteUser(request *restful.Request, response *restful.Response) {
     user := request.QueryParameter("user")
-    pass := request.QueryParameter("pass")
-    //TODO group specific permissions
-    group := request.QueryParameter("group")
-    if user == "" || pass == "" {
-        log.Errorf("[Juju] User or pass not provided\n")
-        response.WriteError(http.StatusBadRequest, fmt.Errorf("User or pass not provided"))
-        return
-    }
-    if group == "" {
-        group = "basic"
-    }
 
     //TODO A verbose parameter in endpoint object ?
     if request.QueryParameter("debug") == "true" {
@@ -33,16 +22,55 @@ func (e *Endpoint) CreateUser(request *restful.Request, response *restful.Respon
     }
     db := etcd.NewClient()
 
+    //FIXME Will it delete a directory ?
+    feedback, err := db.Delete(filepath.Join("hivy/security", user, "password"))
+    if err != nil {
+        HTTPInternalError(response, err)
+        return
+    }
+    log.Debugf("%v\n", feedback)
+
+    //FIXME Ability to delete directory
+    //feedback, err = db.Delete(user)
+    //if err != nil {
+        //HTTPInternalError(response, err)
+        //return
+    //}
+    //log.Debugf("%v\n", feedback)
+
+    response.WriteEntity(Json(`{"delete": 0}`))
+}
+
+
+func CreateUser(request *restful.Request, response *restful.Response) {
+    user := request.QueryParameter("user")
+    pass := request.QueryParameter("pass")
+    //TODO group specific permissions
+    group := request.QueryParameter("group")
+    if user == "" || pass == "" {
+        HTTPBadRequestError(response, fmt.Errorf("User or pass not provided")) 
+        return
+    }
+    if group == "" {
+        group = "basic"
+    }
+
+    if request.QueryParameter("debug") == "true" {
+        etcd.OpenDebug()
+        defer etcd.CloseDebug()
+    }
+    db := etcd.NewClient()
+
     feedback, err := db.Set(filepath.Join("hivy/security", user, "password"), pass, 0)
     if err != nil {
-        response.WriteError(http.StatusInternalServerError, err)
+        HTTPInternalError(response, err)
         return
     }
     log.Debugf("%v\n", feedback)
 
     feedback, err = db.Set(filepath.Join("hivy/security", user, "ressources/machines"), "0", 0)
     if err != nil {
-        response.WriteError(http.StatusInternalServerError, err)
+        HTTPInternalError(response, err)
         return
     }
     log.Debugf("%v\n", feedback)
@@ -54,7 +82,8 @@ func (e *Endpoint) CreateUser(request *restful.Request, response *restful.Respon
         "GET/help",
     }
     admin_allowed_methods := []string {
-        "GET/createuser",
+        "PUT/user",
+        "DELETE/user",
         "GET/juju/bootstrap",
     }
 
@@ -66,7 +95,7 @@ func (e *Endpoint) CreateUser(request *restful.Request, response *restful.Respon
     for _, method := range allowed_methods {
         feedback, err = db.Set(filepath.Join("hivy/security", user, "methods", method), Allowed, 0)
         if err != nil {
-            response.WriteError(http.StatusInternalServerError, err)
+            HTTPInternalError(response, err)
             return
         }
     }
@@ -75,7 +104,7 @@ func (e *Endpoint) CreateUser(request *restful.Request, response *restful.Respon
 }
 
 
-func (e *Endpoint) Help(request *restful.Request, response *restful.Response) {
+func Help(request *restful.Request, response *restful.Response) {
     method := request.QueryParameter("method")
     json := Json(fmt.Sprintf(`{"time": "%s"}`, time.Now()))
     //json := EmptyJSON()

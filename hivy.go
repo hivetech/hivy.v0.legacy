@@ -3,6 +3,7 @@ package main
 import (
     "os"
 	"net/http"
+
     "launchpad.net/loggo"
     "github.com/codegangsta/cli"
 
@@ -11,6 +12,28 @@ import (
 
 
 var log = loggo.GetLogger("hivy.main")
+
+
+func hivy(url string, profile bool) {
+    //TODO Makes it possible to omit one or all method
+    router := NewRouter(BasicAuthenticate, EtcdControlMethod, profile)
+
+    // Login function above will be processed when /login path will be
+    // reached by authentified requests
+    router.Map("GET", "login/", endpoints.Login)
+    router.Map("GET", "juju/{command}", endpoints.Juju)
+    router.Map("GET", "dummy", endpoints.Dummy)
+    //TODO associate one path with several METHOD:ENDPOINT
+    //TODO Below line should be allowed (currently method permission forbids it)
+    //router.Map("PUT", "user/{user-id}", endpoints.CreateUser)
+    router.Map("PUT", "create/", endpoints.CreateUser)
+    //FIXME can't user same root path
+    router.Map("DELETE", "delete/", endpoints.DeleteUser)
+    router.Map("GET", "help/", endpoints.Help)
+
+    log.Infof("Hivy interface serving on %s\n", url)
+    http.ListenAndServe(url, nil)
+}
 
 
 func main() {
@@ -25,10 +48,13 @@ func main() {
         cli.BoolFlag{"verbose", "verbose mode"},
         cli.StringFlag{"logfile", "", "If specified, will write log there"},
         cli.StringFlag{"listen", "127.0.0.1:8080", "url to listen to"},
-        cli.StringFlag{"n", "dafault-name", "the node name (required)"},
+        cli.StringFlag{"n", "", "the node name (required)"},
+        cli.StringFlag{"C", "", "Node to join"},
+        cli.StringFlag{"c", "127.0.0.1:4001", "Etcd client ip to listen on"},
+        cli.StringFlag{"s", "127.0.0.1:7001", "Raft server ip to listen on"},
         cli.StringFlag{"d", ".", "the directory to store etcd log and snapshot"},
         cli.BoolFlag{"f", "force new etcd node configuration if existing is found (WARNING: data loss!)"},
-        cli.StringFlag{"cpuprofile", "", "write cpu profile to file"},
+        cli.BoolFlag{"profile", "Profile requests and etcd perfs"},
     }
 
     // Main function as defined by the cli package
@@ -38,32 +64,24 @@ func main() {
         defer loggo.RemoveWriter("hivy.main")
 
         // Setup centralized configuration
+        // Need to be a new node in the cluster to be ran
         stop := make(chan bool)
-        go RunEtcd(stop, c.String("n"), c.String("d"), c.Bool("f"), c.Bool("verbose"), c.String("cpuprofile"))
-        defer func() {
-            stop <- true
-        }()
+        if c.String("n") != "" {
+            go RunEtcd(stop, c.String("n"), c.String("d"), c.String("c"), c.String("s"),
+                       c.String("C"), c.Bool("f"), c.Bool("verbose"), c.Bool("profile"))
+            defer func() {
+                stop <- true
+            }()
+        } else {
+            stop = nil
+        }
 
-        //TODO Makes it possible to omit one or all method
-        authority := NewAuthority(BasicAuthenticate, EtcdControlMethod)
-        // Available application services
-        //NOTE This is currently useless
-        var endpoint endpoints.Endpoint
-
-        // Login function above will be processed when /login path will be
-        // reached by authentified requests
-        authority.RegisterGET("login/", endpoint.Login)
-        authority.RegisterGET("juju/{command}", endpoint.Juju)
-        //FIXME Overflow when "/" is missing
-        authority.RegisterGET("dummy/", endpoint.Dummy)
-        //TODO Delete user using DELETE http method
-        authority.RegisterGET("createuser/", endpoint.CreateUser)
-        authority.RegisterGET("help/", endpoint.Help)
-
+        // Properly shutdown the server when CTRL-C is received
+        // Send true on its given channel
         CatchInterruption(stop)
 
-        log.Infof("Hivy interface serving on %s\n", c.String("listen"))
-        http.ListenAndServe(c.String("listen"), nil)
+        // Map routes and start up Hivy server
+        hivy(c.String("listen"), c.Bool("profile"))
     }
 
     app.Run(os.Args)
