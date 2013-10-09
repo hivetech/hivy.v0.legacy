@@ -1,13 +1,8 @@
-// Everything related to authentification goes here.
-//
-// Especially, this is currently about encoding / decoding methods and user /
-// pass storage.
+// Package security takes care of user's https requests authentification
 package security
 
-
 import (
-    "launchpad.net/loggo"
+	"launchpad.net/loggo"
 )
-
 
 var log = loggo.GetLogger("hivy.security")

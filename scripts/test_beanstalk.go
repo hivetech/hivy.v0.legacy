@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/kr/beanstalk"
 	"time"
+
+	"github.com/kr/beanstalk"
 )
 
+// Example sends a message
 func Example() {
 	c, err := beanstalk.Dial("tcp", "127.0.0.1:11300")
 	if err != nil {
@@ -20,7 +22,8 @@ func Example() {
 	fmt.Println("[Example]", string(body))
 }
 
-func ExampleTubeSet_Reserve() {
+// ExampleTubeSetReserve waits for a message and aknowledge
+func ExampleTubeSetReserve() {
 	c, err := beanstalk.Dial("tcp", "127.0.0.1:11300")
 	if err != nil {
 		panic(err)
@@ -37,6 +40,6 @@ func ExampleTubeSet_Reserve() {
 }
 
 func main() {
-    go ExampleTubeSet_Reserve()
-    Example()
+	go ExampleTubeSetReserve()
+	Example()
 }
