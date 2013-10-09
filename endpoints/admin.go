@@ -6,6 +6,7 @@ import (
     "path/filepath"
     "time"
 
+    "launchpad.net/loggo"
     "github.com/coreos/go-etcd/etcd"
 	"github.com/emicklei/go-restful"
 )
@@ -15,8 +16,7 @@ import (
 func DeleteUser(request *restful.Request, response *restful.Response) {
     user := request.QueryParameter("user")
 
-    //TODO A verbose parameter in endpoint object ?
-    if request.QueryParameter("debug") == "true" {
+    if log.LogLevel() <= loggo.DEBUG {
         etcd.OpenDebug()
         defer etcd.CloseDebug()
     }
@@ -42,20 +42,23 @@ func DeleteUser(request *restful.Request, response *restful.Response) {
 }
 
 
+// CreateUser Stores given credentials and creates methods permission for the
+// given user, regarding the given group (only admin and standard group are
+// supported at the moment)
 func CreateUser(request *restful.Request, response *restful.Response) {
     user := request.QueryParameter("user")
     pass := request.QueryParameter("pass")
     //TODO group specific permissions
     group := request.QueryParameter("group")
     if user == "" || pass == "" {
-        HTTPBadRequestError(response, fmt.Errorf("User or pass not provided")) 
+        HTTPBadRequestError(response, fmt.Errorf("user or pass not provided")) 
         return
     }
     if group == "" {
         group = "basic"
     }
 
-    if request.QueryParameter("debug") == "true" {
+    if log.LogLevel() <= loggo.DEBUG {
         etcd.OpenDebug()
         defer etcd.CloseDebug()
     }
@@ -75,24 +78,24 @@ func CreateUser(request *restful.Request, response *restful.Response) {
     }
     log.Debugf("%v\n", feedback)
 
-    basic_allowed_methods := []string {
+    basicAllowedMethods := []string {
         "GET/login",
         "GET/dummy",
         "GET/juju/status", "GET/juju/deploy",
         "GET/help",
     }
-    admin_allowed_methods := []string {
+    adminAllowedMethods := []string {
         "PUT/user",
         "DELETE/user",
         "GET/juju/bootstrap",
     }
 
-    allowed_methods := basic_allowed_methods
+    allowedMethods := basicAllowedMethods
     if group == "admin" {
-        allowed_methods = append(allowed_methods, admin_allowed_methods...)
+        allowedMethods = append(allowedMethods, adminAllowedMethods...)
     }
 
-    for _, method := range allowed_methods {
+    for _, method := range allowedMethods {
         feedback, err = db.Set(filepath.Join("hivy/security", user, "methods", method), Allowed, 0)
         if err != nil {
             HTTPInternalError(response, err)
@@ -103,7 +106,7 @@ func CreateUser(request *restful.Request, response *restful.Response) {
     response.WriteEntity(Json(`{"create": 0}`))
 }
 
-
+// Help provides a json object describing available commands
 func Help(request *restful.Request, response *restful.Response) {
     method := request.QueryParameter("method")
     json := Json(fmt.Sprintf(`{"time": "%s"}`, time.Now()))

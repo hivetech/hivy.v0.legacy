@@ -11,6 +11,7 @@ import (
     "github.com/bitly/go-simplejson"
     "github.com/coreos/go-etcd/etcd"
 	"github.com/emicklei/go-restful"
+    "launchpad.net/loggo"
 
     "github.com/hivetech/hivy/security"
 )
@@ -178,7 +179,7 @@ func Juju(request *restful.Request, response *restful.Response) {
 	}
 	log.Debugf("[bootstrap] juju program available at %s\n", jujuPath)
 
-    if request.QueryParameter("debug") == "true" {
+    if log.LogLevel() <= loggo.DEBUG {
         etcd.OpenDebug()
         defer etcd.CloseDebug()
     }

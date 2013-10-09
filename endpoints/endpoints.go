@@ -17,9 +17,7 @@ import (
     "github.com/bitly/go-simplejson"
 )
 
-
 var log = loggo.GetLogger("hivy.endpoints")
-
 
 //TODO Specifi help should be in specific files ?
 const (
@@ -49,20 +47,22 @@ Will return an help message on the method if provided, global otherwise.
 `
 )
 
-
 func HTTPError(writer *restful.Response, err error, httpStatus int) {
     log.Errorf("[HttpError] %v\n", err)
     writer.WriteError(httpStatus, err)
 }
 
-
 func HTTPInternalError(writer *restful.Response, err error) {
     HTTPError(writer, err, http.StatusInternalServerError)
 }
 
-
 func HTTPBadRequestError(writer *restful.Response, err error) {
     HTTPError(writer, err, http.StatusBadRequest)
+}
+
+func HTTPAuthorizationError(writer *restful.Response, err error) {
+	writer.AddHeader("WWW-Authenticate", "Basic realm=Protected Area")
+    HTTPError(writer, err, http.StatusUnauthorized)
 }
 
 
@@ -87,7 +87,7 @@ func EmptyJSON() *simplejson.Json {
  */
 
 
-// hello-world endpoint, for demo and test purpose
+// Dummy is the hello-world endpoint, for demo and test purpose
 func Dummy(request *restful.Request, response *restful.Response) {
      response.WriteEntity(Json(`{"you": "dummy"}`))
 }

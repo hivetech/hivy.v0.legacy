@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "os"
     "os/exec"
     "os/signal"
@@ -8,7 +9,8 @@ import (
 )
 
 const (
-    verbose_log_level loggo.Level = loggo.TRACE
+    super_verbose_log_level loggo.Level = loggo.TRACE
+    verbose_log_level loggo.Level = loggo.INFO
     default_log_level loggo.Level = loggo.WARNING
     current_version string = "0.1.0"
     // Change here to absolute or relative path if etcd is not in your $PATH
@@ -69,7 +71,7 @@ func SetupLog(verbose bool, logfile string) error {
         "hivy.security",
     }
     log_level := default_log_level
-    if verbose {log_level = verbose_log_level}
+    if verbose {log_level = super_verbose_log_level}
 
     // If a file was specified, replace console output
     if logfile != "" {
@@ -111,4 +113,17 @@ func CatchInterruption(stop chan bool) {
             os.Exit(0)
         }
     }()
+}
+
+
+func allTheSame(values []string) (string, error) {
+    for i, v := range values {
+        if i == (len(values) - 1) {
+            break
+        } else if v != values[i + 1] {
+            return "", fmt.Errorf("different strings in the array")
+        }
+    }
+    // If we arrived here, all values are identical
+    return values[0], nil
 }
