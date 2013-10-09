@@ -31,7 +31,7 @@ Status
 
 **Attention** Project is in an *early alpha*, and under heavy development.
 
-Note also I use this project to improve my go and devops skills so
+Note also I use it to improve my go and devops skills so
 there might be some extra dependencies I am testing.
 
 
@@ -112,14 +112,15 @@ func YourFilter(request *restful.Request, response *restful.Response, chain *res
 }
 ```
 
-Example
--------
+Code Example
+------------
 
 ```go
 func authenticate(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
     user, pass, _ := security.Credentials(request)
-    if user != "Chuck" || pass != "Norris" { 
-        endpoints.HTTPAuthroizationError(response, fmt.Errorf("you are not chuck norris"))
+    if user != "Chuck" || pass != "Norris" {  
+        err := fmt.Errorf("you are not chuck norris")
+        endpoints.HTTPAuthroizationError(response, err)
         return 
     }
     chain.ProcessFilter(request, response)
@@ -128,7 +129,8 @@ func authenticate(request *restful.Request, response *restful.Response, chain *r
 func control(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
     method := fmt.Sprintf("%s%s", request.Request.Method, request.Request.URL)
     if strings.Contains(method, "deploy") {
-        endpoints.HTTPBadRequestError(response, fmt.Errorf("deploy method is not supported"))
+        err := fmt.Errorf("deploy method is not supported")
+        endpoints.HTTPBadRequestError(response, err)
         return
     }
     chain.ProcessFilter(request, response)
@@ -165,9 +167,9 @@ DELETE /user?user={user}
 # User action methods
 GET /dummy/
 GET /help?method={method}  # method is optionnal
-GET /login?debug={debug}
-GET /juju/status?debug={debug}
-GET /juju/deploy?project={project}&debug={debug}
+GET /login
+GET /juju/status
+GET /juju/deploy?project={project}
 
 # Configuration methods
 #TODO This is on a different port (4001) for now

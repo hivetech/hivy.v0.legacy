@@ -27,7 +27,7 @@
 // Usage example:
 //      $ go run hivy --verbose --listen 0.0.0.0:8080
 // Client usage example
-//      $ GET -C name:pass http://localhost:8080/login/name
-//      $ curl --user name:pass http://127.0.0.1:8080/login/name
-//      $ python -m "import requests; requests.get('http://127.0.0.1:8080/login/name', auth=('user', 'pass')'"
+//      $ GET -C name:pass http://localhost:8080/login/
+//      $ curl --user name:pass http://127.0.0.1:8080/juju/deploy?project=trading
+//      $ python -m "import requests; requests.delete('http://127.0.0.1:8080/user', data={'user': 'Chuck'}, auth=('user', 'pass')'"
 package main

@@ -30,8 +30,8 @@ style:
 # Install packages required to develop Juju and run tests.
 local-install:
 	go get -u github.com/mattn/gom
-	#FIXME Include as well hivy sub-packages
 	test -f Gomfile || gom gen gomfile
+	sed -i '/hivetech/d' Gomfile
 	gom install
 	gom build
 
@@ -45,8 +45,6 @@ install:
 	go install
 
 run:
-	#go build
-	#./hivy -d node -n master --verbose --profile
 	go install 
 	forego start
 

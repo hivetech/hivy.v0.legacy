@@ -14,8 +14,11 @@ then
     for file in $out
     do
         echo "- ${file}"
+        #TODO With command line: gofmt -w ${file}
     done
     status=1
+else
+    echo "Code format is clean"
 fi
 
 `go vet ./... > .vet 2>&1`
