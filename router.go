@@ -9,14 +9,12 @@ import (
     "github.com/davecheney/profile"
 )
 
-
 // Router is the main functionnal entry point
 type Router struct {
     authentification restful.FilterFunction
     control restful.FilterFunction
     profiling bool
 }
-
 
 func parsePath(path string) (string, string, error) {
     // We need to separate root path from parameters path
@@ -41,7 +39,6 @@ func parsePath(path string) (string, string, error) {
     return ("/" + splittedPath[rootPathIndex]), paramPath, nil 
 }
 
-
 func parseRequest(request string) (string, string, error) {
     // http method and url path are space separated
     splittedRequest := strings.Split(request, " ")
@@ -50,7 +47,6 @@ func parseRequest(request string) (string, string, error) {
     }
     return splittedRequest[0], splittedRequest[1], nil
 }
-
 
 // setupProfiling registers a filter that will measure time to process a
 // request alog cpu and memory usage
@@ -73,7 +69,6 @@ func setupProfiling() {
         log.Infof("[global-filter (timer)] Request processed in %v\n", time.Now().Sub(now))
     })
 }
-
 
 // NewRouter needs one function handling user/pass authetification, and one
 // function handling method permission for the user who requested it.
@@ -182,3 +177,4 @@ func (a *Router) MultiMap(mapping map[string]restful.RouteFunction) error {
     restful.Add(ws)
     return nil
 }
+

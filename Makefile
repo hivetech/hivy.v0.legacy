@@ -24,8 +24,8 @@ check:
 style:
 	@echo "\t[ make ] ===========>  Style.govet"
 	find . -name "*.go" | xargs go tool vet -all -v
-	#@echo "\t[ make ] ===========>  Style.golint"
-	#find . -name "*.go" | xargs golint -min_confidence=0.8 
+	@echo "\t[ make ] ===========>  Style.golint"
+	find . -name "*.go" | xargs golint -min_confidence=0.8 
 
 # Install packages required to develop Juju and run tests.
 local-install:
@@ -45,8 +45,10 @@ install:
 	go install
 
 run:
-	go build
-	./hivy -d node -n master --verbose --profile
+	#go build
+	#./hivy -d node -n master --verbose --profile
+	go install 
+	forego start
 
 extras-dev:
 	sudo apt-get install python-pip
@@ -54,13 +56,15 @@ extras-dev:
 
 	npm install -g underscore-cli
 
+	# I'm testing pretty much everything about go...
 	go get -u github.com/mattn/gom
 	go get -u github.com/gophertown/looper
 	go get -u launchpad.net/gocheck
 	go get -u github.com/remogatto/prettytest
 	go get -u github.com/axw/gocov/gocov
 	go get -u github.com/golang/lint/golint
-	go get github.com/davecheney/profile
+	go get -u github.com/davecheney/profile
+	go get -u github.com/ddollar/forego
 
 watch:
 	looper -debug
@@ -74,5 +78,8 @@ init:
 
 doc:
 	godoc -http=:6060
+
+clean:
+	rm -rf profile/* *.test hivy
 
 .PHONY: install format check

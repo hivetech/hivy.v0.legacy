@@ -46,13 +46,20 @@ Batteries inluded
 * Secured, higly-available and centralized configuration storage
 * Mysql-ready for users logins
 * Debug client provided, dead easy to write one
-* Ready for load-balancing
+* Ready for load-balancing and multi-hosts
+* Built-in profiling
 * 21st century tests
 
 Suit up
 -------
 
 First make sure [etcd binary](https://github.com/coreos/etcd/releases/) is available in your $PATH.
+
+```
+go get -v github.com/hivetech/hivy
+```
+
+Or For development (it will setup etcd)
 
 ```console
 $ git clone https://github.com/hivetech/hivy.go
@@ -66,7 +73,9 @@ Usage
 ```console
 $ make init  # Create admin user and set default hivy configuration
 $ ./hivy --help
-$ ./hivy -d node -n master --verbose
+$ ./hivy -d node -n master --verbose  
+$ # Or 
+$ make run
 
 $ # In another terminal
 $ curl --user admin:root http://127.0.0.1:8080/user?user=name&pass=pass&group=admin -X PUT
@@ -83,7 +92,7 @@ $ ./scripts/config set {user}/{project}/{charm}/series precise
 $ ./scripts/config set {user}/{project}/{charm}/expose True
 ```
 
-To add a new service to our app:
+Let's add a new service to our app:
 
 * Implement in endpoints package a method with this signature: ``func (e
   *Endpoint) YourMethod(request *restful.Request, response *restful.Response)``
@@ -100,6 +109,45 @@ have the following signature:
 func YourFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
     // Filter whatever you want here
     chain.ProcessFilter(request, response)
+}
+```
+
+Example
+-------
+
+```go
+func authenticate(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+    user, pass, _ := security.Credentials(request)
+    if user != "Chuck" || pass != "Norris" { 
+        endpoints.HTTPAuthroizationError(response, fmt.Errorf("you are not chuck norris"))
+        return 
+    }
+    chain.ProcessFilter(request, response)
+}
+
+func control(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+    method := fmt.Sprintf("%s%s", request.Request.Method, request.Request.URL)
+    if strings.Contains(method, "deploy") {
+        endpoints.HTTPBadRequestError(response, fmt.Errorf("deploy method is not supported"))
+        return
+    }
+    chain.ProcessFilter(request, response)
+}
+
+func main() {
+    router := NewRouter(authenticate, control, profile)
+
+    router.Map("GET juju/{command}", endpoints.Juju)
+    router.Map("GET help/", endpoints.Help)
+
+    var userMap = map[string]restful.RouteFunction{
+        "PUT user/": endpoints.CreateUser,
+        "DELETE user/": endpoints.DeleteUser,
+    }
+    router.MultiMap(userMap)
+
+    log.Infof("Hivy interface serving on %s\n", url)
+    http.ListenAndServe("127.0.0.1:8080", nil)
 }
 ```
 
@@ -169,6 +217,12 @@ Check it out on [gowalker](http://gowalker.org/github.com/hivetech/hivy),
 $ make doc
 $ firefox http://localhost:6060/pkg/github.com/hivetech/hivy/
 ```
+
+Contributing
+------------
+
+> Fork, implement, add tests, pull request, get my everlasting thanks and a
+> respectable place here [=)](https://github.com/jondot/groundcontrol)
 
 ---------------------------------------------------------------
 

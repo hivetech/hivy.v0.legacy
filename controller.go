@@ -10,18 +10,15 @@ import (
     "github.com/coreos/go-etcd/etcd"
 )
 
-
 const (
     MAX_MACHINES int = 5
 )
-
 
 type Controller struct {
     db *etcd.Client
     max_machines int
     user string
 }
-
 
 func NewController(user string, debug bool) *Controller {
     if debug {etcd.OpenDebug()}
@@ -32,11 +29,9 @@ func NewController(user string, debug bool) *Controller {
     }
 }
 
-
 func (c *Controller) SetUser(user string) {
     c.user = user
 }
-
 
 func (c *Controller) setMethodPermission(method, permission string) error {
     //TODO Temporary permission with ttl ?
@@ -49,18 +44,15 @@ func (c *Controller) setMethodPermission(method, permission string) error {
     return nil
 }
 
-
 func (c *Controller) EnableMethod(method string) error {
     log.Infof("Enabling method %s\n", method)
     return c.setMethodPermission(method, "1")
 }
 
-
 func (c *Controller) DisableMethod(method string) error {
     log.Infof("Disabling method %s\n", method)
     return c.setMethodPermission(method, "0")
 }
-
 
 // method must be of kind GET/path/to/endpoint (without parameters)
 func (c *Controller) CheckMethod(method string) (bool, error) {
@@ -79,7 +71,6 @@ func (c *Controller) CheckMethod(method string) (bool, error) {
     return true, nil
 }
 
-
 func (c *Controller) Ressource(name string) (string, error) {
     result, err := c.db.Get(filepath.Join("hivy/security", c.user, "ressources", name))
     if err != nil {
@@ -88,7 +79,6 @@ func (c *Controller) Ressource(name string) (string, error) {
     }
     return result[0].Value, nil
 }
-
 
 func (c *Controller) updateMachinesRessource(operation int) error {
     machines_str, err := c.Ressource("machines")
@@ -117,7 +107,6 @@ func (c *Controller) updateMachinesRessource(operation int) error {
     return nil
 }
 
-
 func (c *Controller) Update(method string) error {
     switch {
     case strings.Contains(method, "deploy"):
@@ -126,3 +115,4 @@ func (c *Controller) Update(method string) error {
     }
     return nil
 }
+

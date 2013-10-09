@@ -23,7 +23,7 @@ func hivy(url string, profile bool) {
     // reached by authentified requests
     router.Map("GET login/", endpoints.Login)
     router.Map("GET juju/{command}", endpoints.Juju)
-    router.Map("GET dummy", endpoints.Dummy)
+    router.Map("GET dummy/", endpoints.Dummy)
     router.Map("GET help/", endpoints.Help)
 
     //TODO Below line should be allowed (currently method permission forbids it)

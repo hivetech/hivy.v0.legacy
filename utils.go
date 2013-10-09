@@ -9,7 +9,8 @@ import (
 )
 
 const (
-    verbose_log_level loggo.Level = loggo.TRACE
+    super_verbose_log_level loggo.Level = loggo.TRACE
+    verbose_log_level loggo.Level = loggo.INFO
     default_log_level loggo.Level = loggo.WARNING
     current_version string = "0.1.0"
     // Change here to absolute or relative path if etcd is not in your $PATH
@@ -70,7 +71,7 @@ func SetupLog(verbose bool, logfile string) error {
         "hivy.security",
     }
     log_level := default_log_level
-    if verbose {log_level = verbose_log_level}
+    if verbose {log_level = super_verbose_log_level}
 
     // If a file was specified, replace console output
     if logfile != "" {
