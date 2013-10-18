@@ -1,6 +1,4 @@
 gom 'bitbucket.org/kardianos/osext'
-gom 'github.com/bitly/go-simplejson'
-gom 'github.com/codegangsta/cli'
 gom 'github.com/coreos/etcd/error'
 gom 'github.com/coreos/etcd/store'
 gom 'github.com/coreos/go-etcd/etcd'

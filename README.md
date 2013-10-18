@@ -29,6 +29,11 @@ Status
 [![Build Status](https://drone.io/github.com/hivetech/hivy/status.png)](https://drone.io/github.com/hivetech/hivy/latest)
 [![Coverage Status](https://coveralls.io/repos/hivetech/hivy/badge.png?branch=develop)](https://coveralls.io/r/hivetech/hivy?branch=develop)
 
+Branch   | Version
+-------- | -----
+Stable   | 0.1.5
+Develop  | 0.1.6
+
 **Attention** Project is in an *early alpha*, and under heavy development.
 
 Note also I use it to improve my go and devops skills so
@@ -75,15 +80,15 @@ $ make init  # Create admin user and set default hivy configuration
 $ ./hivy --help
 $ ./hivy -d node -n master --verbose  
 $ # Or 
-$ make run
+$ forego start
 
 $ # In another terminal
-$ curl --user admin:root http://127.0.0.1:8080/user?user=name&pass=pass&group=admin -X PUT
-$ curl --user name:pass http://127.0.0.1:8080/dummy  # Test your installation
+$ curl --user admin:root http://127.0.0.1:8080/v0/actions/user?user=name&pass=pass&group=admin -X PUT
+$ curl --user name:pass http://127.0.0.1:8080/v0/actions/dummy  # Test your installation
 $ # With the provided clients
-$ ./scripts/request help
-$ ./scripts/request login?user={user}&pass={pass}
-$ ./scripts/request juju/deploy?project={project}&debug=true
+$ ./scripts/request v0/actions/help
+$ ./scripts/request v0/actions/login?user={user}&pass={pass}
+$ ./scripts/request v0/actions/juju/deploy?project={project}&debug=true
 
 $ # Configuration management
 $ ./scripts/config set hivy/security/{user}/password secret
@@ -162,14 +167,14 @@ need user:pass authentification and permissions:
 
 ```console
 # Admin action methods
-PUT /user?user={user}&pass={pass}&group={group}
+PUT /v0/actions/user?user={user}&pass={pass}&group={group}
 DELETE /user?user={user}
 # User action methods
-GET /dummy/
-GET /help?method={method}  # method is optionnal
-GET /login
-GET /juju/status
-GET /juju/deploy?project={project}
+GET /v0/actions/dummy/
+GET /v0/actions/help?method={method}  # method is optionnal
+GET /v0/actions/login
+GET /v0/actions/juju/status
+GET /v0/actions/juju/deploy?project={project}
 
 # Configuration methods
 #TODO This is on a different port (4001) for now
@@ -220,11 +225,19 @@ $ make doc
 $ firefox http://localhost:6060/pkg/github.com/hivetech/hivy/
 ```
 
+
 Contributing
 ------------
 
 > Fork, implement, add tests, pull request, get my everlasting thanks and a
 > respectable place here [=)](https://github.com/jondot/groundcontrol)
+
+
+License
+-------
+
+Hivy is available under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
+
 
 ---------------------------------------------------------------
 

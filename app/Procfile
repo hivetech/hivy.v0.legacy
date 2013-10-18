@@ -1,0 +1,2 @@
+web: hivy --verbose --profile
+config: pgrep --count etcd > /dev/null || etcd -n master -d node -v

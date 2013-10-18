@@ -1,4 +1,4 @@
-package main
+package hivy
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ func (t *testSuite) TestMap() {
 func (t *testSuite) TestParsePath() {
 	path, param, err := parsePath("user/{id}/{name}")
 	t.Check(err, gocheck.IsNil)
-	t.Check(path, gocheck.Equals, "/user")
+	t.Check(path, gocheck.Equals, "user")
 	t.Check(param, gocheck.Equals, "/{id}/{name}")
 
 	// Bad format, missing last "/"
@@ -45,12 +45,12 @@ func (t *testSuite) TestParsePath() {
 	// However "/path" is allowed
 	path, param, err = parsePath("/security")
 	t.Check(err, gocheck.IsNil)
-	t.Check(path, gocheck.Equals, "/security")
+	t.Check(path, gocheck.Equals, "security")
 	t.Check(param, gocheck.Equals, "")
 
 	path, param, err = parsePath("/security/{credentials}/{token}")
 	t.Check(err, gocheck.IsNil)
-	t.Check(path, gocheck.Equals, "/security")
+	t.Check(path, gocheck.Equals, "security")
 	t.Check(param, gocheck.Equals, "/{credentials}/{token}")
 }
 
@@ -81,7 +81,7 @@ func (t *testSuite) TestCheckMapping() {
 	}
 	rootPath, err := checkMapping(userMap)
 	t.Check(err, gocheck.IsNil)
-	t.Check(rootPath, gocheck.Equals, "/user")
+	t.Check(rootPath, gocheck.Equals, "user")
 
 	var wrongUserMap = map[string]restful.RouteFunction{
 		"PUT user/":     testEndpoint,

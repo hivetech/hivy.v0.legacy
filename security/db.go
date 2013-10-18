@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	// Requested by the lib
 	"github.com/coreos/go-etcd/etcd"
+	// Requested by the lib
 	_ "github.com/go-sql-driver/mysql"
 )
 

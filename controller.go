@@ -1,4 +1,4 @@
-package main
+package hivy
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/coreos/go-etcd/etcd"
+	"github.com/coreos/etcd/store"
 )
 
 const (
@@ -38,6 +39,16 @@ func NewController(user string, debug bool) *Controller {
 // SetUser changes the user currently controlled
 func (c *Controller) SetUser(user string) {
 	c.user = user
+}
+
+// Set wraps go-etcd Set method
+func (c *Controller) Set(key, value string, ttl uint64) (*store.Response, error) {
+	return c.db.Set(key, value, ttl)
+}
+
+// Get wraps go-etcd Get method
+func (c *Controller) Get(path string) ([]*store.Response, error) {
+	return c.db.Get(path)
 }
 
 func (c *Controller) setMethodPermission(method, permission string) error {

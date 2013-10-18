@@ -1,4 +1,4 @@
-package endpoints
+package main
 
 const (
 	// GlobalHelp shows a sum up of the app

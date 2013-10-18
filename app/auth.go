@@ -1,4 +1,4 @@
-package endpoints
+package main
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 	"github.com/emicklei/go-restful"
 
 	"github.com/hivetech/hivy/security"
+    "github.com/hivetech/hivy"
 )
 
 // Get the certificate filename to return
@@ -20,7 +21,7 @@ func certificate() (string, error) {
 func Login(request *restful.Request, response *restful.Response) {
 	user, _, err := security.Credentials(request)
 	if err != nil {
-		HTTPInternalError(response, err)
+		hivy.HTTPInternalError(response, err)
 		return
 	}
 	log.Debugf("Providing a new certificate to", user)
