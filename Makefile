@@ -2,7 +2,7 @@
 # vim:ft=make
 
 PROJECT="github.com/hivetech/hivy"
-CHARMSTORE?="${HOME}/charms"
+CHARMSTORE?="${HOME}/dev/projects/hivetech/cells"
 
 all: install extras-dev
 
@@ -36,7 +36,7 @@ local-install:
 	gom build
 
 install:
-	[[ -d /tmp/etcd ]] || git clone https://github.com/coreos/etcd.git /tmp/etcd
+	test -d /tmp/etcd || git clone https://github.com/coreos/etcd.git /tmp/etcd
 	cd /tmp/etcd/ && ./build
 	test -f /tmp/etcd/etcd && cp /tmp/etcd/etcd ${GOPATH}/bin
 
@@ -68,10 +68,13 @@ watch:
 	looper -debug
 
 init:
-	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
+	pgrep --count etcd > /dev/null || etcd -n master -d app/node -v &
+	sleep 5
 	curl -L http://127.0.0.1:4001/v1/keys/hivy/charmstore -d value="${CHARMSTORE}"
 	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/password -d value="root"
-	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/createuser -d value="1"
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/PUT/v0/methods/user -d value="1"
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/v0/methods/help -d value="1"
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/v0/methods/dummy -d value="1"
 	killall etcd
 
 doc:

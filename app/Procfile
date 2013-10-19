@@ -1,2 +1,3 @@
-web: hivy --verbose --profile
-config: pgrep --count etcd > /dev/null || etcd -n master -d node -v
+web: app --listen 0.0.0.0:8080 --verbose --profile
+config: pgrep --count etcd > /dev/null || etcd -c 0.0.0.0:4001 -n master -d node -v
+worker: echo "worker listening" && worker -queues juju -interval 5

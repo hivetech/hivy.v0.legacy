@@ -1,6 +1,4 @@
 gom 'bitbucket.org/kardianos/osext'
-gom 'github.com/coreos/etcd/error'
-gom 'github.com/coreos/etcd/store'
 gom 'github.com/coreos/go-etcd/etcd'
 gom 'github.com/coreos/go-log/log'
 gom 'github.com/coreos/go-systemd/journal'

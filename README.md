@@ -83,12 +83,12 @@ $ # Or
 $ forego start
 
 $ # In another terminal
-$ curl --user admin:root http://127.0.0.1:8080/v0/actions/user?user=name&pass=pass&group=admin -X PUT
-$ curl --user name:pass http://127.0.0.1:8080/v0/actions/dummy  # Test your installation
+$ curl --user admin:root http://127.0.0.1:8080/v0/methods/user?user=name&pass=pass&group=admin -X PUT
+$ curl --user name:pass http://127.0.0.1:8080/v0/methods/dummy  # Test your installation
 $ # With the provided clients
-$ ./scripts/request v0/actions/help
-$ ./scripts/request v0/actions/login?user={user}&pass={pass}
-$ ./scripts/request v0/actions/juju/deploy?project={project}&debug=true
+$ ./scripts/request v0/methods/help
+$ ./scripts/request v0/methods/login?user={user}&pass={pass}
+$ ./scripts/request v0/methods/juju/deploy?project={project}&debug=true
 
 $ # Configuration management
 $ ./scripts/config set hivy/security/{user}/password secret
@@ -167,14 +167,14 @@ need user:pass authentification and permissions:
 
 ```console
 # Admin action methods
-PUT /v0/actions/user?user={user}&pass={pass}&group={group}
+PUT /v0/methods/user?user={user}&pass={pass}&group={group}
 DELETE /user?user={user}
-# User action methods
-GET /v0/actions/dummy/
-GET /v0/actions/help?method={method}  # method is optionnal
-GET /v0/actions/login
-GET /v0/actions/juju/status
-GET /v0/actions/juju/deploy?project={project}
+# User methods
+GET /v0/methods/dummy/
+GET /v0/methods/help?method={method}  # method is optionnal
+GET /v0/methods/login
+GET /v0/methods/juju/status
+GET /v0/methods/juju/deploy?project={project}
 
 # Configuration methods
 #TODO This is on a different port (4001) for now
