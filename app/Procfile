@@ -1,3 +1,4 @@
 web: app --listen 0.0.0.0:8080 --verbose --profile
-config: pgrep --count etcd > /dev/null || etcd -c 0.0.0.0:4001 -n master -d node -v
-worker: echo "worker listening" && worker -queues juju -interval 5
+config: pgrep --count etcd > /dev/null || etcd -c 0.0.0.0:4001 -n master -d node -v && while true; do sleep 10000; done
+worker: echo "worker listening" && worker -queues deploy,postDeploy -interval 5
+queues: pgrep --count redis > /dev/null || redis-server && while true; do sleep 10000; done

@@ -12,7 +12,7 @@ import (
 const (
   // MaxMachinesRule restritcs number of deployments allowed
   // Note that multi-machines deployment counts for one
-  MaxMachinesRule int = 5
+  MaxMachinesRule int = 10
 )
 
 // Controller knows about rules, constraints and has methods to check them
@@ -26,9 +26,9 @@ type Controller struct {
 //TODO machines ip https://github.com/coreos/go-etcd/blob/master/etcd/client.go
 func NewController(user string, debug bool) *Controller {
   // Print out requests etcd is processing
-  if debug {
-    etcd.OpenDebug()
-  }
+  //if debug {
+    //etcd.OpenDebug()
+  //}
   // Default config
   machines := []string{"http://127.0.0.1:4001"}
   return &Controller{

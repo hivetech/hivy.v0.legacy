@@ -93,12 +93,14 @@ func RunEtcd(stop chan bool, name, directory, clientIP, raftIP, clusterIP string
 }
 
 // SetupLog set application's modules log level
-func SetupLog(appModules string, verbose bool, logfile string) error {
+func SetupLog(appModules []string, verbose bool, logfile string) error {
 	var hivyModules = []string{
 		"hivy",
 		"hivy.security",
 	}
-    hivyModules = append(hivyModules, appModules)
+  for _, module := range appModules {
+    hivyModules = append(hivyModules, module)
+  }
 	logLevel := defaultLogLevel
 	if verbose {
 		logLevel = superVerboseLogLevel

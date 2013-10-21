@@ -45,10 +45,12 @@ func status(juju, user string) (*simplejson.Json, error) {
 
 func deploy(juju string, controller *hivy.Controller, user string, project string) (*simplejson.Json, error) {
   report := JSON(fmt.Sprintf(`{"time": "%s"}`, time.Now()))
-  logs := []string{}
   deployed := []string{}
-  relation := []string{}
+  relations := []string{}
   exposed := []string{}
+
+  class := "Hivy"
+  client, err := goresque.Dial(redisURL)
 
   // Global settings
   result, err := controller.Get(filepath.Join("hivy", "charmstore"))
@@ -62,6 +64,7 @@ func deploy(juju string, controller *hivy.Controller, user string, project strin
   if err != nil || len(result) != 1 {
     return EmptyJSON(), err
   }
+  //TODO Get this list by inspecting /{user}/{project}/* ?
   services := strings.Split(result[0].Value, ",")
 
   for _, service := range services {
@@ -75,53 +78,34 @@ func deploy(juju string, controller *hivy.Controller, user string, project strin
 
     // Charm deployment
     deployed = append(deployed, name)
-    class := "Hivy"
-    queue := "juju"
-    client, err := goresque.Dial(redisURL)
     if err != nil { return EmptyJSON(), err }
-    client.Enqueue(class, queue, name, service, series, charmstore)
+    client.Enqueue(class, "deploy", name, service, series, charmstore)
 
-/*
- *    result, err = controller.Get(filepath.Join(user, project, service, "expose"))
- *    if err == nil && len(result) == 1 {
- *      log.Debugf("%v\n", result[0])
- *      if result[0].Value == "True" {
- *        //log.Infof("expose %s (%s)", charm, name)
- *        exposed = append(exposed, name)
- *
- *        cmd := exec.Command(juju, "expose", name)
- *        output, err := cmd.CombinedOutput()
- *        if err != nil { return EmptyJSON(), err }
- *        logs = append(logs, string(output))
- *      }
- *    }
- */
+    // Charm relation
+    result, err = controller.Get(filepath.Join(user, project, service, "relation"))
+    if err == nil && len(result) == 1 {
+      name := fmt.Sprintf("%s-%s-%s", user, project, service)
+      relationTarget := fmt.Sprintf("%s-%s-%s", user, project, result[0].Value)
+      log.Infof("add relation between %s and %s", relationTarget, name)
+      relations = append(relations, fmt.Sprintf("%s->%s", relationTarget, name))
+    }
+
+    // Charm exposition
+    result, err = controller.Get(filepath.Join(user, project, service, "expose"))
+    if err == nil && len(result) == 1 {
+      log.Debugf("%v\n", result[0])
+      if result[0].Value == "1" {
+        //log.Infof("expose %s (%s)", charm, name)
+        exposed = append(exposed, name)
+      }
+    }
   }
 
-  // Deployment done, check for relations
-  //FIXME I think this command appends much to early
-/*
- *  for _, service := range services {
- *    result, err = controller.Get(filepath.Join(user, project, service, "relation"))
- *    if err == nil && len(result) == 1 {
- *      name := fmt.Sprintf("%s-%s-%s", user, project, service)
- *      relationTarget := fmt.Sprintf("%s-%s-%s", user, project, result[0].Value)
- *      log.Infof("Adding relation between %s and %s", name, relationTarget)
- *      relation = append(relation, fmt.Sprintf("%s->%s", name, relationTarget))
- *
- *      cmd := exec.Command(juju, "add-relation",
- *      relationTarget, name)
- *      output, err := cmd.CombinedOutput()
- *      if err != nil { return EmptyJSON(), err } 
- *      logs = append(logs, string(output))
- *    }
- *  }
- */
+  client.Enqueue(class, "postDeploy", relations, exposed)
 
   report.Set("deployed", deployed)
   report.Set("exposed", exposed)
-  report.Set("connected", relation)
-  report.Set("logs", logs)
+  report.Set("connected", relations)
   return report, nil
 }
 

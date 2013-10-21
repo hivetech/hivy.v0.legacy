@@ -19,8 +19,9 @@ preferences are easily stored and accessed from a (soon...) ssl-secured etcd
 cluster database.
 
 Out of the box, and because it is part of the **Unide project**, Hivy exposes
-awesome [juju](https://juju.ubuntu.com/) commands to authentified remote users.
-**Powerful IT infrasctructure building accessible from robust but simple http requests !**
+awesome [juju](https://juju.ubuntu.com/) command, users authentification, and
+admin related commands.  **Powerful IT infrasctructure building accessible from
+robust but simple http requests !**
 
 
 Status
@@ -67,7 +68,7 @@ go get -v github.com/hivetech/hivy
 Or For development (it will setup etcd)
 
 ```console
-$ git clone https://github.com/hivetech/hivy.go
+$ git clone https://github.com/hivetech/hivy.git
 $ make
 $ make tests
 ```
@@ -75,38 +76,16 @@ $ make tests
 Usage
 -----
 
-```console
-$ make init  # Create admin user and set default hivy configuration
-$ ./hivy --help
-$ ./hivy -d node -n master --verbose  
-$ # Or 
-$ forego start
-
-$ # In another terminal
-$ curl --user admin:root http://127.0.0.1:8080/v0/methods/user?user=name&pass=pass&group=admin -X PUT
-$ curl --user name:pass http://127.0.0.1:8080/v0/methods/dummy  # Test your installation
-$ # With the provided clients
-$ ./scripts/request v0/methods/help
-$ ./scripts/request v0/methods/login?user={user}&pass={pass}
-$ ./scripts/request v0/methods/juju/deploy?project={project}&debug=true
-
-$ # Configuration management
-$ ./scripts/config set hivy/security/{user}/password secret
-$ ./scripts/config get {user}/{project}/services
-$ ./scripts/config set {user}/{project}/{charm}/series precise
-$ ./scripts/config set {user}/{project}/{charm}/expose True
-```
-
 Let's add a new service to our app:
 
-* Implement in endpoints package a method with this signature: ``func (e
-  *Endpoint) YourMethod(request *restful.Request, response *restful.Response)``
+* Implement a method with this signature: ``func YourMethod(request
+  *restful.Request, response *restful.Response)``
 * Create an authority with authentification and permission
   methods: ``a := NewAuthority(authMethod, permissionMethod)``
 * Finally, map the service: ``a.Map("METHOD /path/with/{parameter}", endpoint.YourMethod)``
 
 It is possible to register at a same path multiple endpoints to multiple http
-methods. Check out hivy.go to take a glance at it.  We can see as well where to
+methods. Check out app/hivy.go to take a glance at it.  We can see as well where to
 insert custom authentification, permission or any filter method. Those must
 have the following signature: 
 
@@ -156,62 +135,6 @@ func main() {
     log.Infof("Hivy interface serving on %s\n", url)
     http.ListenAndServe("127.0.0.1:8080", nil)
 }
-```
-
-
-Current API
------------
-
-Here are listed currently supported methods. With the ./hivy application, all
-need user:pass authentification and permissions:
-
-```console
-# Admin action methods
-PUT /v0/methods/user?user={user}&pass={pass}&group={group}
-DELETE /user?user={user}
-# User methods
-GET /v0/methods/dummy/
-GET /v0/methods/help?method={method}  # method is optionnal
-GET /v0/methods/login
-GET /v0/methods/juju/status
-GET /v0/methods/juju/deploy?project={project}
-
-# Configuration methods
-#TODO This is on a different port (4001) for now
-GET /v1/keys/{ topology below }
-```
-
-
-Etcd configuration storage topology
------------------------------------
-
-Etcd storage follows filesystem convention.
-
-```
-http://127.0.0.1:4001/v1/keys/hivy/setting1
-                                   ...
-                                   settingN
-                                   security/user1
-                                            ...
-                                            userN/password
-                                                  methods/method1
-                                                          ...
-                                                          methodN
-                                                  ressources/ressource1
-                                                             ...
-                                                             ressourceN
-                             /user1
-                             ...
-                             /userN/project1
-                                    ...
-                                   /projectN/setting1
-                                             ...
-                                             settingN
-                                             cell1
-                                             ...
-                                             cellN/setting1
-                                                   ...
-                                                   settingN
 ```
 
 Documentation

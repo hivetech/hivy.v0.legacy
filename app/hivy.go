@@ -62,7 +62,8 @@ func main() {
 	// Main function as defined by the cli package
 	app.Action = func(c *cli.Context) {
 		// Current logger configuration
-		hivy.SetupLog("hivy.app", c.Bool("verbose"), c.String("logfile"))
+    modules := []string{"hivy.app", "hivy.worker"}
+		hivy.SetupLog(modules, c.Bool("verbose"), c.String("logfile"))
 		defer loggo.RemoveWriter("hivy.main")
 
 		// Setup centralized configuration
