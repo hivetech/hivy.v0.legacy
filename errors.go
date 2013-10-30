@@ -6,6 +6,8 @@ import (
 	"github.com/emicklei/go-restful"
 )
 
+//TODO Better desgin: https://github.com/dotcloud/docker/blob/master/api.go
+
 // httpFactoryError logs the error and writes back a standard http message
 func httpFactoryError(writer *restful.Response, err error, httpStatus int) {
 	log.Errorf("[httpfactoryerror] %v\n", err)

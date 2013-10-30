@@ -17,9 +17,9 @@ func serveApp(url string, profile bool) {
 	//TODO Makes it possible to omit one or all method
 	router := hivy.NewRouter(hivy.BasicAuthenticate, hivy.EtcdControlMethod, profile)
 
+  // The router automatically set before "/v{version}/methods/
 	// Login function above will be processed when /login path will be
 	// reached by authentified requests
-    // The router automatically set before "/v{version}/actions/
 	router.Map("GET login/", Login)
 	router.Map("GET juju/{command}", Juju)
 	router.Map("GET dummy/", Dummy)

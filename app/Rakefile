@@ -25,6 +25,8 @@ namespace :install do
 	    sh "sed -i '/hivetech/d' Gomfile"
       msg "install go dependencies"
 	    sh "cat Gomfile | sed -e s/gom\\ // | xargs go get -u"
+      msg "install boxcars proxy"
+      sh "go get -u github.com/azer/boxcars/boxcars"
 
       msg "compile and install workers"
       sh "cd worker && go install"

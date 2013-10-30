@@ -41,20 +41,20 @@ func postDeploy(juju string, args ...interface{}) error {
     // Does not work: services := strings.Split(relations.Index(i).String(), "->")
     services := strings.Split(relations.Index(i).Interface().(string), "->")
     log.Infof("juju add-relation %s->%s\n", services[0], services[1])
-    //cmd := exec.Command(juju, "add-relation", services[0], services[1])
-    //output, err := cmd.CombinedOutput()
-    //if err != nil { return err } 
-    //log.Infof("juju add-relation %s->%s: %v\n", services[0], services[1], output)
+    cmd := exec.Command(juju, "add-relation", services[0], services[1])
+    output, err := cmd.CombinedOutput()
+    if err != nil { return err } 
+    log.Infof("juju add-relation %s->%s: %v\n", services[0], services[1], output)
   }
 
   exposes := reflect.ValueOf(args[1])
   for i := 0; i < exposes.Len(); i++ {
     service := exposes.Index(i).Interface().(string)
     log.Infof("juju expose %s\n", service)
-    //cmd := exec.Command(juju, "expose", service)
-    //output, err := cmd.CombinedOutput()
-    //if err != nil { return err } 
-    //log.Infof("juju expose %s: %v\n", service, output)
+    cmd := exec.Command(juju, "expose", service)
+    output, err := cmd.CombinedOutput()
+    if err != nil { return err } 
+    log.Infof("juju expose %s: %v\n", service, output)
   }
 
   //TODO Check what is going on to tell etcd
@@ -91,14 +91,14 @@ func deploy(juju string, args ...interface{}) error {
   log.Infof("deploy %s (%s)", charm, name)
   log.Debugf("juju %v\n", deployArgs)
 
-  //TODO 1. Dump {user}/{project}/{service}/... into /path/condif.yml
-  //     2. deployArgs = append(deployArgs, "--config")
-  //        deployArgs = append(deployArgs, /path/config.yml)
+  //TODO 1. Dump {user}/{project}/{service}/... into /path/config.yml
+  deployArgs = append(deployArgs, "--config")
+  deployArgs = append(deployArgs, "~/dev/projects/hivetech/cells/conf_example.yml")
 
-  //cmd := exec.Command(juju, deployArgs...)
-  //output, err := cmd.CombinedOutput()
-  //if err != nil { return err } 
-  //log.Infof("juju deploy %s: %v\n", name, output)
+  cmd := exec.Command(juju, deployArgs...)
+  output, err := cmd.CombinedOutput()
+  if err != nil { return err } 
+  log.Infof("juju deploy %s: %v\n", name, output)
 
   //TODO Check what is going on to tell etcd
   return nil

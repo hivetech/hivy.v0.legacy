@@ -6,13 +6,17 @@ import (
 	"github.com/emicklei/go-restful"
 
 	"github.com/hivetech/hivy/security"
-    "github.com/hivetech/hivy"
+  "github.com/hivetech/hivy"
 )
 
 // Get the certificate filename to return
 func certificate() (string, error) {
 	//TODO Generate a new certificate
 	return "ca.crt.example", nil
+}
+
+func sshKey() (string, error) {
+  return "/home/xavier/.ssh/id_rsa", nil
 }
 
 // Login is an endpoint that delivers a certificate, used later for etcd
@@ -24,12 +28,9 @@ func Login(request *restful.Request, response *restful.Response) {
 		hivy.HTTPInternalError(response, err)
 		return
 	}
-	log.Debugf("Providing a new certificate to", user)
-	certFile, _ := certificate()
+	log.Debugf("Providing a new ssh key to", user)
+	key, _ := sshKey()
 
 	// Return the certificate
-	http.ServeFile(
-		response.ResponseWriter,
-		request.Request,
-		certFile)
+	http.ServeFile(response.ResponseWriter, request.Request, key)
 }

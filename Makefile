@@ -83,4 +83,7 @@ doc:
 clean:
 	rm -rf *.test app/profile/* app/hivy app/*.test
 
+count-line:
+	find . -name "*.go" -print0 | xargs -0 wc -l
+
 .PHONY: install format check

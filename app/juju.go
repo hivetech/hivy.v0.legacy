@@ -26,9 +26,26 @@ func bootstrap(juju string) (*simplejson.Json, error) {
   return JSON(`{"error": "not implemented"}`), nil
 }
 
-func status(juju, user string) (*simplejson.Json, error) {
+func vmSshForward(user, project string, controller *hivy.Controller, status *simplejson.Json) (string, error) {
+  //TODO Don't keep hivelab hard coded this way
+  serviceKey  := fmt.Sprintf("%s-%s-%s", user, project, "hivelab")
+  machineID, err := status.Get("services").Get(serviceKey).Get("units").Get(serviceKey+"/0").Get("machine").String()
+  if err != nil { 
+    return "", err
+  }
+  log.Debugf("got hivelab machineid: %s", machineID)
+  result, err := controller.Get(filepath.Join("hivy", "mapping", "xavier-local-machine-"+machineID))
+  if err != nil || len(result) != 1 {
+    return "", err
+  }
+  return result[0].Value, nil
+}
+
+func status(juju string, controller *hivy.Controller, user, project string) (*simplejson.Json, error) {
   //TODO Filter for given user, this will return full system juju status
-  //     juju status <user>-<project>-<charm> for each service at {user}/{project}/services
+  //     if project == ""
+  //        for service in etcd.Get("user/project/services")
+  //        cmd := exec.Command("juju", "status", "--format", "json", fmt.Sprintf("%s-%s-%s", user, project, service)
   log.Infof("fetch juju status\n")
   cmd := exec.Command("juju", "status", "--format", "json")
   output, err := cmd.CombinedOutput()
@@ -40,6 +57,10 @@ func status(juju, user string) (*simplejson.Json, error) {
   if err != nil {
     return EmptyJSON(), err
   }
+
+  mapping, _ := vmSshForward(user, project, controller, jsonOutput)
+  jsonOutput.Set("ssh-port", mapping)
+
   return jsonOutput, err
 }
 
@@ -147,7 +168,8 @@ func Juju(request *restful.Request, response *restful.Response) {
     }
     return
   } else if command == "status" {
-    report, err := status(jujuPath, user)
+    project := request.QueryParameter("project")
+    report, err := status(jujuPath, c, user, project)
     if err != nil {
       hivy.HTTPInternalError(response, err)
     } else {

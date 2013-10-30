@@ -1,13 +1,14 @@
 #! /bin/bash
 
-IP=127.0.0.1
-PORT=8080
+IP=$(hostname -I | awk '{print $1}')
+PORT=8081
 USER=xav
 PASS=boss
 #USER=admin
 #PASS=root
-MAJOR_VERSION=v0
-PREFIX=$MAJOR_VERSION/methods
+#MAJOR_VERSION=v0
+#PREFIX=$MAJOR_VERSION/methods
+PREFIX="api/methods"
 
 METHOD=$1
 REQUEST=$2
