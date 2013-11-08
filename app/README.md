@@ -61,7 +61,7 @@ DELETE /user?user={user}
 GET /v0/methods/dummy/
 GET /v0/methods/help?method={method}  # method is optionnal
 GET /v0/methods/login
-GET /v0/methods/juju/status
+GET /v0/methods/juju/status?project={project}
 GET /v0/methods/juju/deploy?project={project}
 
 # Configuration methods

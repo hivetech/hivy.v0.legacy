@@ -2,189 +2,187 @@ package main
 
 import (
   "fmt"
-  "os/exec"
-  "path/filepath"
-  "strings"
   "time"
+  "path/filepath"
+  "os"
+  "os/exec"
 
   "github.com/ghais/goresque"
-  "github.com/bitly/go-simplejson"
-  "github.com/emicklei/go-restful"
   "launchpad.net/loggo"
+  "github.com/bitly/go-simplejson"
 
-  "github.com/hivetech/hivy/security"
   "github.com/hivetech/hivy"
 )
 
 const (
-  jujuBin string = "juju"
-  redisURL string = "127.0.0.1:6379"
+  //TODO Series policy (automatic choice ?)
+  defaultSeries string = "precise"
+  jujuBin  string = "juju"
+  workerClass string = "Hivy"
 )
 
-func bootstrap(juju string) (*simplejson.Json, error) {
-  //FIXME Need sudo permission
-  return JSON(`{"error": "not implemented"}`), nil
+// Juju is a provider used for Nodes management
+type Juju struct {
+  Path string
+  Controller *hivy.Controller
 }
 
-func vmSshForward(user, project string, controller *hivy.Controller, status *simplejson.Json) (string, error) {
-  //TODO Don't keep hivelab hard coded this way
-  serviceKey  := fmt.Sprintf("%s-%s-%s", user, project, "hivelab")
-  machineID, err := status.Get("services").Get(serviceKey).Get("units").Get(serviceKey+"/0").Get("machine").String()
-  if err != nil { 
-    return "", err
-  }
-  log.Debugf("got hivelab machineid: %s", machineID)
-  result, err := controller.Get(filepath.Join("hivy", "mapping", "xavier-local-machine-"+machineID))
+// NewJuju initializes juju provider informations
+func NewJuju() (*Juju, error) {
+  // User information is not yet relevant for the controller
+  user := ""
+  // Check if juju is available for use
+  jp, err := exec.LookPath(jujuBin)
+  if err != nil { return nil, err }
+  log.Debugf("[bootstrap] juju program available at %s\n", jp)
+
+  var debug bool
+  if log.LogLevel() <= loggo.DEBUG { debug = true }
+  c := hivy.NewController(user, debug)
+
+  return &Juju{
+    Path: jp,
+    Controller: c, 
+  }, nil
+}
+
+// id returns the way nodes are called with juju provider
+func (jj *Juju) id(user, service string) string {
+  return fmt.Sprintf("%s-%s", user, service)
+}
+
+// Charmstore search for the appropriate configuration
+func (jj *Juju) Charmstore(service string) (string, string, error) {
+  //TODO If service contains github url, eventually download it and set charmstore := github_charmstore
+
+  result, err := jj.Controller.Get(filepath.Join("hivy", "charmstore"))
   if err != nil || len(result) != 1 {
-    return "", err
+    return "", "", err
   }
-  return result[0].Value, nil
+  path := result[0].Value
+
+  // Default is local storage
+  prefix := "local"
+  if _, err := os.Stat(filepath.Join(path, defaultSeries, service)); os.IsNotExist(err) {
+    log.Infof("%s not available localy, use online store", service)
+    prefix = "cs"
+  }   
+  return path, prefix, nil
 }
 
-func status(juju string, controller *hivy.Controller, user, project string) (*simplejson.Json, error) {
-  //TODO Filter for given user, this will return full system juju status
-  //     if project == ""
-  //        for service in etcd.Get("user/project/services")
-  //        cmd := exec.Command("juju", "status", "--format", "json", fmt.Sprintf("%s-%s-%s", user, project, service)
-  log.Infof("fetch juju status\n")
-  cmd := exec.Command("juju", "status", "--format", "json")
+// Status fetches given service informations
+func (jj *Juju) Status(user, service string) (*simplejson.Json, error) {
+  id := jj.id(user, service)
+  args := []string{"status", "--format", "json"}
+  if service != "" {
+    args = append(args, id)
+  }
+  log.Infof("fetch juju status (%s)\n", id)
+
+  cmd := exec.Command("juju", args...)
   output, err := cmd.CombinedOutput()
   if err != nil {
     return EmptyJSON(), err
   }
+  log.Debugf("successful request: %v\n", string(output))
 
   jsonOutput, err := simplejson.NewJson(output)
   if err != nil {
     return EmptyJSON(), err
   }
 
-  mapping, _ := vmSshForward(user, project, controller, jsonOutput)
+  mapping, _ := vmSshForward(user, jj.Controller, jsonOutput)
   jsonOutput.Set("ssh-port", mapping)
 
   return jsonOutput, err
 }
 
-func deploy(juju string, controller *hivy.Controller, user string, project string) (*simplejson.Json, error) {
+// Deploy uses juju deploy to create a new service
+func (jj *Juju) Deploy(user, service string) (*simplejson.Json, error) {
+  args := []string{"deploy", "--show-log"}
+  id := jj.id(user, service)
   report := JSON(fmt.Sprintf(`{"time": "%s"}`, time.Now()))
-  deployed := []string{}
-  relations := []string{}
-  exposed := []string{}
+  log.Infof("deploy juju service: %s\n", id)
 
-  class := "Hivy"
+  // Get charms location
+  storePath, storePrefix, err := jj.Charmstore(service)
+  if err != nil { return EmptyJSON(), err }
+  if storePrefix == "local" {
+    args = append(args, "--repository")
+    args = append(args, storePath)
+  }
+
+  // Add final service syntax to deploy
+  args = append(args, fmt.Sprintf("%s:%s/%s", storePrefix, defaultSeries, service))
+  args = append(args, id)
+
+  // Charm deployment
+  log.Infof("enqueue process")
   client, err := goresque.Dial(redisURL)
+  if err != nil { return EmptyJSON(), err }
+  client.Enqueue(workerClass, "fork", jj.Path, args)
 
-  // Global settings
-  result, err := controller.Get(filepath.Join("hivy", "charmstore"))
-  if err != nil || len(result) != 1 {
-    return EmptyJSON(), err
-  }
-  charmstore := result[0].Value
-
-  // User defined settings
-  result, err = controller.Get(filepath.Join(user, project, "services"))
-  if err != nil || len(result) != 1 {
-    return EmptyJSON(), err
-  }
-  //TODO Get this list by inspecting /{user}/{project}/* ?
-  services := strings.Split(result[0].Value, ",")
-
-  for _, service := range services {
-    //FIXME Should every parameters has default value, or handle it there ?
-    result, err = controller.Get(filepath.Join(user, project, service, "series"))
-    if err != nil || len(result) != 1 {
-      return EmptyJSON(), err
-    }
-    series := result[0].Value
-    name  := fmt.Sprintf("%s-%s-%s", user, project, service)
-
-    // Charm deployment
-    deployed = append(deployed, name)
-    if err != nil { return EmptyJSON(), err }
-    client.Enqueue(class, "deploy", name, service, series, charmstore)
-
-    // Charm relation
-    result, err = controller.Get(filepath.Join(user, project, service, "relation"))
-    if err == nil && len(result) == 1 {
-      name := fmt.Sprintf("%s-%s-%s", user, project, service)
-      relationTarget := fmt.Sprintf("%s-%s-%s", user, project, result[0].Value)
-      log.Infof("add relation between %s and %s", relationTarget, name)
-      relations = append(relations, fmt.Sprintf("%s->%s", relationTarget, name))
-    }
-
-    // Charm exposition
-    result, err = controller.Get(filepath.Join(user, project, service, "expose"))
-    if err == nil && len(result) == 1 {
-      log.Debugf("%v\n", result[0])
-      if result[0].Value == "1" {
-        //log.Infof("expose %s (%s)", charm, name)
-        exposed = append(exposed, name)
-      }
-    }
-  }
-
-  client.Enqueue(class, "postDeploy", relations, exposed)
-
-  report.Set("deployed", deployed)
-  report.Set("exposed", exposed)
-  report.Set("connected", relations)
+  report.Set("deployed", id)
+  report.Set("provider", "juju")
+  report.Set("arguments", args)
+  report.Set("series", defaultSeries)
   return report, nil
 }
 
-// Juju endpoints. It executes the given command, for the given
-// user, regarding given project preferences stored in etcd, which are:
-//  * charms path if local
-//  * charms to be deployed
-//  * For each:
-//      * Based machine image
-func Juju(request *restful.Request, response *restful.Response) {
-  // Parameters
-  // Context parameters
-  user, _, err := security.Credentials(request)
-  if err != nil {
-    hivy.HTTPInternalError(response, err)
-    return
-  }
-  command := request.PathParameter("command")
+// Destroy uses juju destroy to remove a service
+func (jj *Juju) Destroy(user, service string) (*simplejson.Json, error) {
+  id := jj.id(user, service)
+  report := JSON(fmt.Sprintf(`{"time": "%s"}`, time.Now()))
+  log.Infof("destroy juju service: %s\n", id)
 
-  // Check if juju is available for use
-  jujuPath, err := exec.LookPath(jujuBin)
-  if err != nil {
-    hivy.HTTPInternalError(response, err)
-    return
-  }
-  log.Debugf("[bootstrap] juju program available at %s\n", jujuPath)
+  //Note For now this is massive and basic destruction
+  unitArgs := []string{"destroy-unit", id + "/0", "--show-log"}
+  serviceArgs := []string{"destroy-service", id, "--show-log"}
 
-  var debug bool
-  if log.LogLevel() <= loggo.DEBUG { debug = true }
-  c := hivy.NewController(user, debug)
+  cmd := exec.Command("juju", "status", id, "--format", "json")
+  output, err := cmd.CombinedOutput()
+  if err != nil { return EmptyJSON(), err }
+  status, err := simplejson.NewJson(output)
+  machineID, err := status.GetPath("services", id, "units", id+"/0", "machine").String()
+  if err != nil { return EmptyJSON(), err }
+  machineArgs := []string{"destroy-machine", machineID, "--show-log"}
 
-  if command == "deploy" {
-    project := request.QueryParameter("project")
-    report, err := deploy(jujuPath, c, user, project)
-    if err != nil {
-      hivy.HTTPInternalError(response, err)
-    } else {
-      response.WriteEntity(report)
-    }
-    return
-  } else if command == "status" {
-    project := request.QueryParameter("project")
-    report, err := status(jujuPath, c, user, project)
-    if err != nil {
-      hivy.HTTPInternalError(response, err)
-    } else {
-      response.WriteEntity(report)
-    }
-    return
-  } else if command == "bootstrap" {
-    report, err := bootstrap(jujuPath)
-    if err != nil {
-      hivy.HTTPInternalError(response, err)
-    } else {
-      response.WriteEntity(report)
-    }
-    return
-  }
+  client, err := goresque.Dial(redisURL)
+  if err != nil { return EmptyJSON(), err }
+  log.Infof("enqueue destroy-unit")
+  client.Enqueue(workerClass, "fork", jj.Path, unitArgs)
+  time.Sleep(5 * time.Second)
+  log.Infof("enqueue destroy-service")
+  client.Enqueue(workerClass, "fork", jj.Path, serviceArgs)
+  time.Sleep(5 * time.Second)
+  log.Infof("enqueue destroy-machine")
+  client.Enqueue(workerClass, "fork", jj.Path, machineArgs)
 
-  response.WriteEntity(EmptyJSON())
+  report.Set("provider", "juju")
+  report.Set("unit destroyed", id + "/0")
+  report.Set("service destroyed", id)
+  report.Set("machine destroyed", machineID)
+  report.Set("unit arguments", unitArgs)
+  report.Set("service arguments", serviceArgs)
+  report.Set("machine arguments", machineArgs)
+  return report, nil
+}
+
+// AddRelation links two juju services
+func (jj *Juju) AddRelation(user, serviceOne, serviceTwo string) (*simplejson.Json, error) {
+  idOne := jj.id(user, serviceOne)
+  idTwo := jj.id(user, serviceTwo)
+  report := JSON(fmt.Sprintf(`{"time": "%s"}`, time.Now()))
+  log.Infof("add juju relation: %s -> %s\n", idOne, idTwo)
+
+  args := []string{"add-relation", "--show-log", idOne, idTwo}
+  client, err := goresque.Dial(redisURL)
+  if err != nil { return EmptyJSON(), err }
+  log.Infof("enqueue add-relation")
+  client.Enqueue(workerClass, "fork", jj.Path, args)
+
+  report.Set("provider", "juju")
+  report.Set("plugged", fmt.Sprintf("%s -> %s", idOne, idTwo))
+  report.Set("relation arguments", args)
+  return report, nil
 }

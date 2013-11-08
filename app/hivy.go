@@ -14,16 +14,26 @@ import (
 var log = loggo.GetLogger("hivy.app")
 
 func serveApp(url string, profile bool) {
-	//TODO Makes it possible to omit one or all method
+  // Optional fitering and profiling
 	router := hivy.NewRouter(hivy.BasicAuthenticate, hivy.EtcdControlMethod, profile)
 
   // The router automatically set before "/v{version}/methods/
 	// Login function above will be processed when /login path will be
 	// reached by authentified requests
-	router.Map("GET login/", Login)
-	router.Map("GET juju/{command}", Juju)
 	router.Map("GET dummy/", Dummy)
 	router.Map("GET help/", Help)
+	router.Map("GET login/", Login)
+  //FIXME Temporary
+  router.Map("PUT plug/", Plug)
+
+	var nodeMap = map[string]restful.RouteFunction{
+    //TODO Put on an existing node could upgrade it (i.e. upgrade-charm)
+		"PUT node/":    Deploy,
+		"DELETE node/": Destroy,
+		"GET node/": Status,
+		//"PUT node/plug": Plug,
+	}
+	router.MultiMap(nodeMap)
 
 	//TODO Below line should be allowed (currently method permission forbids it)
 	//router.Map("PUT", "user/{user-id}", CreateUser)

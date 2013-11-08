@@ -9,6 +9,7 @@ cells:
       # Docker based image
       series: hivetech/lab
       # Settings provided to the charm through --config flag
+      #TODO Dump it into a file
       settings:
         - app-repo: "https://github.com/hivtech/hivy"
           host-ip: "192.168.0.12"

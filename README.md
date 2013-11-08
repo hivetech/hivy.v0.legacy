@@ -59,7 +59,7 @@ Batteries inluded
 Suit up
 -------
 
-First make sure [etcd binary](https://github.com/coreos/etcd/releases/) is available in your $PATH.
+First make sure [etcd binary](https://github.com/coreos/etcd/releases/) is available in your `$PATH.`
 
 ```
 go get -v github.com/hivetech/hivy

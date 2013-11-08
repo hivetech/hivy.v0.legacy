@@ -23,13 +23,13 @@ type Controller struct {
 }
 
 // NewController setup debug mode and return an initialized controller
-//TODO machines ip https://github.com/coreos/go-etcd/blob/master/etcd/client.go
 func NewController(user string, debug bool) *Controller {
   // Print out requests etcd is processing
   if debug {
     etcd.OpenDebug()
   }
   // Default config
+  //TODO machines ip https://github.com/coreos/go-etcd/blob/master/etcd/client.go
   machines := []string{"http://127.0.0.1:4001"}
   return &Controller{
     db:          etcd.NewClient(machines),

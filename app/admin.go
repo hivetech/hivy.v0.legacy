@@ -19,7 +19,6 @@ func DeleteUser(request *restful.Request, response *restful.Response) {
   if log.LogLevel() <= loggo.DEBUG { debug = true }
   c := hivy.NewController(user, debug)
 
-	//FIXME Will it delete a directory ?
 	feedback, err := c.Delete(filepath.Join("hivy/security", user, "password"))
 	if err != nil {
 		hivy.HTTPInternalError(response, err)
