@@ -2,7 +2,7 @@
 # vim:ft=make
 
 PROJECT="github.com/hivetech/hivy"
-CHARMSTORE?="${HOME}/charms"
+CHARMSTORE?="${HOME}/dev/projects/hivetech/cells"
 
 all: install extras-dev
 
@@ -13,7 +13,7 @@ tests: check coverage style
 
 coverage:
 	@echo "\t[ make ] ===========>  Coverage"
-	gocov test github.com/hivetech/hivy github.com/hivetech/hivy/endpoints github.com/hivetech/hivy/security | gocov report
+	gocov test github.com/hivetech/hivy github.com/hivetech/hivy/security | gocov report
 
 check:
 	go build
@@ -36,17 +36,12 @@ local-install:
 	gom build
 
 install:
-	git clone https://github.com/coreos/etcd.git /tmp/etcd
+	test -d /tmp/etcd || git clone https://github.com/coreos/etcd.git /tmp/etcd
 	cd /tmp/etcd/ && ./build
 	test -f /tmp/etcd/etcd && cp /tmp/etcd/etcd ${GOPATH}/bin
-	cd -
 
 	cat Gomfile | sed -e s/gom\ // | xargs go get -u
 	go install
-
-run:
-	go install 
-	forego start
 
 extras-dev:
 	sudo apt-get install python-pip
@@ -63,21 +58,32 @@ extras-dev:
 	go get -u github.com/golang/lint/golint
 	go get -u github.com/davecheney/profile
 	go get -u github.com/ddollar/forego
+	go get -u github.com/mreiferson/go-httpclient
+
+extras-app:
+	go get -u github.com/codegangsta/cli
+	go get -u github.com/bitly/go-simplejson
 
 watch:
 	looper -debug
 
 init:
-	pgrep --count etcd > /dev/null || etcd -n master -d node -v &
+	pgrep --count etcd > /dev/null || etcd -n master -d app/node -v &
+	sleep 5
 	curl -L http://127.0.0.1:4001/v1/keys/hivy/charmstore -d value="${CHARMSTORE}"
 	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/password -d value="root"
-	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/createuser -d value="1"
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/PUT/v0/methods/user -d value="1"
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/v0/methods/help -d value="1"
+	curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/v0/methods/dummy -d value="1"
 	killall etcd
 
 doc:
 	godoc -http=:6060
 
 clean:
-	rm -rf profile/* *.test hivy
+	rm -rf *.test app/profile/* app/hivy app/*.test
+
+count-line:
+	find . -name "*.go" -print0 | xargs -0 wc -l
 
 .PHONY: install format check

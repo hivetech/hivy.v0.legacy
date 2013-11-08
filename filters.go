@@ -1,4 +1,4 @@
-package main
+package hivy
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"github.com/emicklei/go-restful"
 	"launchpad.net/loggo"
 
-	"github.com/hivetech/hivy/endpoints"
 	"github.com/hivetech/hivy/security"
 )
 
@@ -38,16 +37,16 @@ func EtcdControlMethod(request *restful.Request, response *restful.Response, cha
 	controller := NewController(user, debug)
 
 	if err := controller.Update(FormatMethod(request)); err != nil {
-		endpoints.HTTPInternalError(response, err)
+		HTTPInternalError(response, err)
 		return
 	}
 
 	isAllowed, err := controller.CheckMethod(FormatMethod(request))
 	if err != nil {
-		endpoints.HTTPInternalError(response, err)
+		HTTPInternalError(response, err)
 		return
 	} else if !isAllowed {
-		endpoints.HTTPAuthorizationError(response, fmt.Errorf("method disabled"))
+		HTTPAuthorizationError(response, fmt.Errorf("method disabled"))
 		return
 	}
 	chain.ProcessFilter(request, response)
@@ -61,7 +60,7 @@ func BasicAuthenticate(req *restful.Request, resp *restful.Response, chain *rest
 	// Use base64 decoding to extract from http header user credentials
 	username, passwd, err := security.Credentials(req)
 	if err != nil {
-		endpoints.HTTPAuthorizationError(resp, err)
+		HTTPAuthorizationError(resp, err)
 		return
 	}
 	log.Infof("User %s trying to connect with %s\n", username, passwd)
@@ -70,11 +69,11 @@ func BasicAuthenticate(req *restful.Request, resp *restful.Response, chain *rest
 	//TODO Manage a way to plug whatever datastore you want, wherever it is
 	ok, err := security.EtcdCheckCredentials(username, passwd, debug)
 	if err != nil {
-		endpoints.HTTPInternalError(resp, err)
+		HTTPInternalError(resp, err)
 		return
 	}
 	if !ok {
-		endpoints.HTTPAuthorizationError(resp, fmt.Errorf("credentials refused"))
+		HTTPAuthorizationError(resp, fmt.Errorf("credentials refused"))
 		return
 	}
 	log.Infof("Authentification granted, processing (%s:%s)", username, passwd)

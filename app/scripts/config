@@ -11,7 +11,8 @@ VALUE=$3
 if [ "$1" == "get" ]; then
     curl -L http://$IP:$PORT/v1/keys/$PATH_KEY | underscore print --color 
 elif [ "$1" == "set" ]; then
-    curl -L http://$IP:$PORT/v1/keys/$PATH_KEY -d value=$VALUE | underscore print --color 
+    #FIXME Does not work
+    curl -L http://$IP:$PORT/v1/keys/$PATH_KEY -d value="$VALUE" | underscore print --color 
 else
     echo "Unknown command, use set or get."
 fi

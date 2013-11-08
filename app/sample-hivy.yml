@@ -1,0 +1,32 @@
+project: labo
+services: hivelab,mysql
+cells: 
+    # Juju higl level data
+    - charm: hivelab
+      version: latest
+      relation: mysql
+      expose: true
+      # Docker based image
+      series: hivetech/lab
+      # Settings provided to the charm through --config flag
+      #TODO Dump it into a file
+      settings:
+        - app-repo: "https://github.com/hivtech/hivy"
+          host-ip: "192.168.0.12"
+          openlibs: /opt
+          editor: vim
+          terminal_multiplexer: screen
+          shell:
+            default: zsh
+            prompt: ohmyzsh
+          dev:
+            node_version: 0.11.7
+          plugins:
+            - nvm
+            - t
+            - z
+            - bd
+
+    - charm: mysql
+      version: latest
+      series: quantal

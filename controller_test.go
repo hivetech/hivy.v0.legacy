@@ -1,4 +1,4 @@
-package main
+package hivy
 
 import (
 	"launchpad.net/gocheck"

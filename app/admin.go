@@ -1,37 +1,35 @@
-package endpoints
+package main
 
 import (
 	"fmt"
 	"path/filepath"
 	"time"
 
-	"github.com/coreos/go-etcd/etcd"
 	"github.com/emicklei/go-restful"
 	"launchpad.net/loggo"
+
+    "github.com/hivetech/hivy"
 )
 
 // DeleteUser removes from etcd storage evrything related to the given user-id
 func DeleteUser(request *restful.Request, response *restful.Response) {
 	user := request.QueryParameter("user")
 
-	if log.LogLevel() <= loggo.DEBUG {
-		etcd.OpenDebug()
-		defer etcd.CloseDebug()
-	}
-	db := etcd.NewClient()
+  var debug bool
+  if log.LogLevel() <= loggo.DEBUG { debug = true }
+  c := hivy.NewController(user, debug)
 
-	//FIXME Will it delete a directory ?
-	feedback, err := db.Delete(filepath.Join("hivy/security", user, "password"))
+	feedback, err := c.Delete(filepath.Join("hivy/security", user, "password"))
 	if err != nil {
-		HTTPInternalError(response, err)
+		hivy.HTTPInternalError(response, err)
 		return
 	}
 	log.Debugf("%v\n", feedback)
 
 	//FIXME Ability to delete directory
-	//feedback, err = db.Delete(user)
+	//feedback, err = c.Delete(user)
 	//if err != nil {
-	//HTTPInternalError(response, err)
+	//hivy.HTTPInternalError(response, err)
 	//return
 	//}
 	//log.Debugf("%v\n", feedback)
@@ -48,40 +46,39 @@ func CreateUser(request *restful.Request, response *restful.Response) {
 	//TODO group specific permissions
 	group := request.QueryParameter("group")
 	if user == "" || pass == "" {
-		HTTPBadRequestError(response, fmt.Errorf("user or pass not provided"))
+		hivy.HTTPBadRequestError(response, fmt.Errorf("user or pass not provided"))
 		return
 	}
 
-	if log.LogLevel() <= loggo.DEBUG {
-		etcd.OpenDebug()
-		defer etcd.CloseDebug()
-	}
-	db := etcd.NewClient()
+  var debug bool
+  if log.LogLevel() <= loggo.DEBUG { debug = true }
+  c := hivy.NewController(user, debug)
 
-	feedback, err := db.Set(filepath.Join("hivy/security", user, "password"), pass, 0)
+	feedback, err := c.Set(filepath.Join("hivy/security", user, "password"), pass, 0)
 	if err != nil {
-		HTTPInternalError(response, err)
+		hivy.HTTPInternalError(response, err)
 		return
 	}
 	log.Debugf("%v\n", feedback)
 
-	feedback, err = db.Set(filepath.Join("hivy/security", user, "ressources/machines"), "0", 0)
+	feedback, err = c.Set(filepath.Join("hivy/security", user, "ressources/machines"), "0", 0)
 	if err != nil {
-		HTTPInternalError(response, err)
+		hivy.HTTPInternalError(response, err)
 		return
 	}
 	log.Debugf("%v\n", feedback)
 
+    //FIXME v0 hardcoded
 	basicAllowedMethods := []string{
-		"GET/login",
-		"GET/dummy",
-		"GET/juju/status", "GET/juju/deploy",
-		"GET/help",
+		"GET/v0/methods/login",
+		"GET/v0/methods/dummy",
+		"GET/v0/methods/juju/status", "GET/v0/methods/juju/deploy",
+		"GET/v0/methods/help",
 	}
 	adminAllowedMethods := []string{
-		"PUT/user",
-		"DELETE/user",
-		"GET/juju/bootstrap",
+		"PUT/v0/methods/user",
+		"DELETE/v0/methods/user",
+		"GET/v0/methods/juju/bootstrap",
 	}
 
 	allowedMethods := basicAllowedMethods
@@ -90,9 +87,9 @@ func CreateUser(request *restful.Request, response *restful.Response) {
 	}
 
 	for _, method := range allowedMethods {
-		feedback, err = db.Set(filepath.Join("hivy/security", user, "methods", method), Allowed, 0)
+		feedback, err = c.Set(filepath.Join("hivy/security", user, "methods", method), hivy.Allowed, 0)
 		if err != nil {
-			HTTPInternalError(response, err)
+			hivy.HTTPInternalError(response, err)
 			return
 		}
 	}
@@ -128,12 +125,12 @@ func Help(request *restful.Request, response *restful.Response) {
 	} else {
 		json.Set("title", "Hivy API")
 		json.Set("resume", GlobalHelp)
-		json.Set("/dummy", "Useless so essential, for tests purpose")
-		json.Set("/login", "Fetch back an SSL certificate")
-		json.Set("/help/{command}", "Get this message, or more details on {command}")
-		json.Set("/juju/{command}/{project}", "Manage project through juju commands")
+		json.Set("/v0/methods/dummy", "Useless so essential, for tests purpose")
+		json.Set("/v0/methods/login", "Fetch back an SSL certificate")
+		json.Set("/v0/methods/help/{command}", "Get this message, or more details on {command}")
+		json.Set("/v0/methods/juju/{command}/{project}", "Manage project through juju commands")
 		json.Set("/v1/keys/{path/to/key}", "Set, get, delete settings")
-		json.Set("/createuseruser={user}&pass={pass}", "Store new user credentials")
+		json.Set("/v0/methods/user?user={user}&pass={pass}&group={group}", "Manage user")
 		response.WriteEntity(json)
 	}
 	return

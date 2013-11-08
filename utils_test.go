@@ -1,4 +1,4 @@
-package main
+package hivy
 
 import (
 	"testing"
@@ -29,16 +29,23 @@ func (t *testSuite) TestLogger() {
 	verbose := true
 	notVerbose := false
 
-	err := SetupLog(verbose, filename)
+	err := SetupLog("test", verbose, filename)
 	t.Nil(err)
-	err = SetupLog(notVerbose, filename)
+	err = SetupLog("test", notVerbose, filename)
 	t.Nil(err)
 	loggo.RemoveWriter("hivy.main")
 }
 
 func (t *testSuite) TestVersion() {
-	version := Version()
-	t.Equal("0.1.0", version)
+	version := StableVersion()
+	t.Equal(version.major, 0)
+	t.Equal(version.minor, 1)
+	t.Equal(version.fix, 5)
+}
+
+func (t *testSuite) TestVersionString() {
+    version := Version{1, 2, 3}
+	t.Equal(version.String(), "1.2.3")
 }
 
 func (t *testSuite) TestAllTheSame() {

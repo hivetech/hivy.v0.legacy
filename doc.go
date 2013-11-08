@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 //
-// Hivy REST framework
-// ===================
+// Package hivy, REST framework
+// ============================
 //
 // Gate between user requests and Hive jobs. The client sends authentified
 // http requests to reach endpoints defined in the endpoints directory.
@@ -30,4 +30,4 @@
 //      $ GET -C name:pass http://localhost:8080/login/
 //      $ curl --user name:pass http://127.0.0.1:8080/juju/deploy?project=trading
 //      $ python -m "import requests; requests.delete('http://127.0.0.1:8080/user', data={'user': 'Chuck'}, auth=('user', 'pass')'"
-package main
+package hivy
