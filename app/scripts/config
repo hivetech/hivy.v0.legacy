@@ -1,18 +1,16 @@
 #! /bin/bash
 
-IP=127.0.0.1
-PORT=4001
-USER=xav
-PASS=boss
+IP=192.168.0.12
+PORT=8081
 PATH_KEY=$2
 VALUE=$3
+PREFIX=api/conf
 
 # https://github.com/coreos/etcd
 if [ "$1" == "get" ]; then
-    curl -L http://$IP:$PORT/v1/keys/$PATH_KEY | underscore print --color 
+    curl -L http://$IP:$PORT/$PREFIX/$PATH_KEY | underscore print --color 
 elif [ "$1" == "set" ]; then
-    #FIXME Does not work
-    curl -L http://$IP:$PORT/v1/keys/$PATH_KEY -d value="$VALUE" | underscore print --color 
+    curl -L http://$IP:$PORT/$PREFIX/$PATH_KEY -d value="$VALUE" | underscore print --color 
 else
     echo "Unknown command, use set or get."
 fi

@@ -6,7 +6,10 @@ import (
   "path/filepath"
   "os"
   "os/exec"
+  "strings"
+  "io/ioutil"
 
+  "launchpad.net/goyaml"
   "github.com/ghais/goresque"
   "launchpad.net/loggo"
   "github.com/bitly/go-simplejson"
@@ -70,6 +73,52 @@ func (jj *Juju) Charmstore(service string) (string, string, error) {
   return path, prefix, nil
 }
 
+// fetchConfig uses controller to read a configuration and dump it into a yaml file
+func (jj *Juju) fetchConfig(user, service string) (string, error) {
+  //FIXME This works only for hivetest and hivelab
+  //      Could explore directories instead
+  if ! strings.HasPrefix(service, "hive") {
+    log.Infof("service not supported for custom configuration")
+    return "", nil
+  }
+  // Initialize
+  configLabTree := []string{
+    "serf-ip", "dna-repo", "targets", "app-repo", "extra-packages",
+    "openlibs", "editor", "terminal_multiplexer", "plugins",
+    "shell/default", "shell/prompt",
+    "dev/node_version", "dev/go_version", "dev/python_version",
+  }
+  config := make(map[string]string)
+
+  // Fetch and store configuration
+  log.Infof("reading configuration for node %s\n", jj.id(user, service))
+  for _, key := range configLabTree {
+    result, err := jj.Controller.Get(filepath.Join(user, service, key))
+    if err == nil && len(result) == 1 {
+      log.Infof("[config] %s = %s\n", strings.Replace(key, "/", ".", -1), result[0].Value)
+      config[strings.Replace(key, "/", "-", -1)] = result[0].Value 
+    }
+  }
+
+  // Dump file
+  charmConfig := make(map[string]interface{})
+  charmConfig[jj.id(user, service)] = config
+  log.Infof("serializing config")
+  out, err := goyaml.Marshal(charmConfig)
+  if err != nil { return "", err }
+  //filePath := filepath.Join("~", jj.id(user, service) + ".yaml")
+  //filePath := filepath.Join(os.Getenv("HOME"), user + "-config.yaml")
+  filePath := filepath.Join("/tmp", user + "-config.yaml")
+  log.Infof("dump configuration into %s\n", filePath)
+  //FIXME can't use the file afterward
+  //if err := ioutil.WriteFile(filePath, out, os.ModeAppend); err != nil {
+  if err := ioutil.WriteFile(filePath, out, 0666); err != nil {
+    return "", err
+  }
+
+  return filePath, nil
+}
+
 // Status fetches given service informations
 func (jj *Juju) Status(user, service string) (*simplejson.Json, error) {
   id := jj.id(user, service)
@@ -115,6 +164,14 @@ func (jj *Juju) Deploy(user, service string) (*simplejson.Json, error) {
   // Add final service syntax to deploy
   args = append(args, fmt.Sprintf("%s:%s/%s", storePrefix, defaultSeries, service))
   args = append(args, id)
+
+  // Read and dump user configuration
+  confPath, err := jj.fetchConfig(user, service)
+  if err != nil { return EmptyJSON(), err }
+  if confPath != "" {
+    args = append(args, "--config") 
+    args = append(args, confPath) 
+  }
 
   // Charm deployment
   log.Infof("enqueue process")

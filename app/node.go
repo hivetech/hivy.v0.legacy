@@ -78,6 +78,7 @@ func Deploy(request *restful.Request, response *restful.Response) {
 
   if provider == "juju" {
     //TODO Deploy command on existing service triggers upgrade-charm
+    //TODO For suitable charms, it could also deploy other clustered units
     juju, err := NewJuju()
     if err != nil {
       hivy.HTTPInternalError(response, err)

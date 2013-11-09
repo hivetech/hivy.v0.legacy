@@ -29,7 +29,10 @@ func (hw *hivyWorker) forker(queue string, args ...interface{}) error {
   log.Infof("fork %s %v\n", process, processArgs)
   cmd := exec.Command(process, processArgs...)
   output, err := cmd.CombinedOutput()
-  if err != nil { return err } 
+  if err != nil { 
+    log.Errorf("error forking process: %v\n", err)
+    return err 
+  } 
   log.Infof("successfully forked %s: %v\n", args, string(output))
 
   return nil
