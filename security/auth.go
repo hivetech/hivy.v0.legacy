@@ -30,7 +30,6 @@ func decodeCredentials(encoded string) (string, string, error) {
 // Credentials extracts from the header the authentification hash, and decodes
 // it to return username and password informations.
 func Credentials(request *restful.Request) (string, string, error) {
-	//FIXME If no authentification is used, crash with index out of bounds
 	encoded := request.Request.Header.Get("Authorization")
 	if len(encoded) > 6 {
 		// [6:] extracts the hash
