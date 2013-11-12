@@ -1,6 +1,6 @@
-![Unide](https://raw.github.com/hivetech/hivetech.github.io/master/images/logo-unide.png)
-
----------------------------------------------------------------
+<p align="center">
+  <img src="https://raw.github.com/hivetech/hivetech.github.io/master/images/logo-unide.png" alt="Unide logo"/>
+</p>
 
 Hivy
 ====
@@ -16,10 +16,11 @@ so-standard process between.
 The project makes heavy use of [etcd](http://coreos.com/docs/etcd/) as a
 highly-available centralized configuration storage. Server and clients
 preferences are easily stored and accessed from a (soon...) ssl-secured etcd
-cluster database.
+cluster database. Note it is implemented behind a `Controller` abstraction that
+will allow to easily integrate other storage systems in the dutur.
 
 Out of the box, and because it is part of the **Unide project**, Hivy exposes
-awesome [juju](https://juju.ubuntu.com/) command, users authentification, and
+[juju](https://juju.ubuntu.com/) command, users authentification, and
 admin related commands.  **Powerful IT infrasctructure building accessible from
 robust but simple http requests !**
 
@@ -33,7 +34,7 @@ Status
 Branch   | Version
 -------- | -----
 Stable   | 0.1.5
-Develop  | 0.1.6
+Develop  | 0.1.9
 
 **Attention** Project is in an *early alpha*, and under heavy development.
 
@@ -44,7 +45,7 @@ there might be some extra dependencies I am testing.
 Batteries inluded
 -----------------
 
-* Deadly easy to use, build serious applications in minutes
+* Dead easy to use, build serious applications in minutes
 * Http standard authentification
 * Permission per user per Method
 * Plug and play endpoints, authentification and permission methods

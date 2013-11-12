@@ -106,12 +106,8 @@ func (jj *Juju) fetchConfig(user, service string) (string, error) {
   log.Infof("serializing config")
   out, err := goyaml.Marshal(charmConfig)
   if err != nil { return "", err }
-  //filePath := filepath.Join("~", jj.id(user, service) + ".yaml")
-  //filePath := filepath.Join(os.Getenv("HOME"), user + "-config.yaml")
   filePath := filepath.Join("/tmp", user + "-config.yaml")
   log.Infof("dump configuration into %s\n", filePath)
-  //FIXME can't use the file afterward
-  //if err := ioutil.WriteFile(filePath, out, os.ModeAppend); err != nil {
   if err := ioutil.WriteFile(filePath, out, 0666); err != nil {
     return "", err
   }

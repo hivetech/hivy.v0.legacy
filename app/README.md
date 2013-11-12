@@ -28,22 +28,21 @@ Usage
 $ rake app:init  # Create admin user and set default hivy configuration
 $ hivy --help
 $ hivy -d node -n master --verbose  
-$ # Or 
+$ # Or full deployement
 $ forego start
 
 $ # In another terminal
 $ curl --user admin:root http://127.0.0.1:8080/v0/methods/user?user=name&pass=pass&group=admin -X PUT
 $ curl --user name:pass http://127.0.0.1:8080/v0/methods/dummy  # Test your installation
 $ # With the provided clients
-$ ./scripts/request v0/methods/help
-$ ./scripts/request v0/methods/login?user={user}&pass={pass}
-$ ./scripts/request v0/methods/juju/deploy?project={project}&debug=true
+$ ./scripts/request get v0/methods/help
+$ ./scripts/request get v0/methods/login
+$ ./scripts/request put v0/methods/node?id={project}
 
 $ # Configuration management
 $ ./scripts/config set hivy/security/{user}/password secret
-$ ./scripts/config get {user}/{project}/services
-$ ./scripts/config set {user}/{project}/{charm}/series precise
-$ ./scripts/config set {user}/{project}/{charm}/expose True
+$ ./scripts/config set {user}/{node}/series precise
+$ ./scripts/config set {user}/{node}/expose True
 ```
 
 
@@ -61,8 +60,11 @@ DELETE /user?user={user}
 GET /v0/methods/dummy/
 GET /v0/methods/help?method={method}  # method is optionnal
 GET /v0/methods/login
-GET /v0/methods/juju/status?project={project}
-GET /v0/methods/juju/deploy?project={project}
+GET /v0/methods/node
+GET /v0/methods/node?id={name}
+PUT /v0/methods/node?id={name}
+DELETE /v0/methods/node?id={name}
+PUT /v0/methods/node/plug?id={name}&with={relation}
 
 # Configuration methods
 #TODO This is on a different port (4001) for now
@@ -90,16 +92,13 @@ http://127.0.0.1:4001/v1/keys/hivy/setting1
                                                              ressourceN
                              /user1
                              ...
-                             /userN/project1
+                             /userN/node1
                                     ...
-                                   /projectN/setting1
-                                             ...
-                                             settingN
-                                             cell1
-                                             ...
-                                             cellN/setting1
-                                                   ...
-                                                   settingN
+                                   /nodeN/setting1
+                                          ...
+                                          settingN
+                             /backends/localhost/name1
+                                                 ...
 ```
 
 
