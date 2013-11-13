@@ -1,0 +1,16 @@
+#! /bin/bash
+
+IP=$(hostname -I | awk '{print $1}')
+PORT=8081
+PATH_KEY=$2
+VALUE=$3
+PREFIX=api/conf
+
+# https://github.com/coreos/etcd
+if [ "$1" == "get" ]; then
+    curl -L http://$IP:$PORT/$PREFIX/$PATH_KEY | underscore print --color 
+elif [ "$1" == "set" ]; then
+    curl -L http://$IP:$PORT/$PREFIX/$PATH_KEY -d value="$VALUE" | underscore print --color 
+else
+    echo "Unknown command, use set or get."
+fi

@@ -1,0 +1,15 @@
+#! /bin/bash
+
+IP=$(hostname -I | awk '{print $1}')
+PORT=8081
+USER=xav
+PASS=boss
+#USER=admin
+#PASS=root
+PREFIX="api/methods"
+
+METHOD=$1
+REQUEST=$2
+
+# https://github.com/jkbr/httpie
+http --auth $USER:$PASS $METHOD http://$IP:$PORT/$PREFIX/$REQUEST
