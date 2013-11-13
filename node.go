@@ -1,4 +1,4 @@
-package main
+package hivy
 
 import (
   "fmt"
@@ -8,7 +8,7 @@ import (
   "github.com/emicklei/go-restful"
 
   "github.com/hivetech/hivy/security"
-  "github.com/hivetech/hivy"
+  "github.com/hivetech/hivy/beacon"
 )
 
 const (
@@ -18,10 +18,10 @@ const (
 )
 
 // vmSshForward returns the host port the service is using for ssh
-func vmSshForward(user string, controller *hivy.Controller, status *simplejson.Json) (string, error) {
+func vmSshForward(user string, controller *beacon.Controller, status *simplejson.Json) (string, error) {
   // We want user's lab hostname, ok like <user>-local-machine-<ID>
   // And we have everything but the machine ID where the lab is
-  //FIXME serviceKey is juju format specific
+  //FIXME serviceKey is juju format specific, should use id() method for proper abstraction
   serviceKey  := fmt.Sprintf("%s-%s", user, labNode)
   //machineID, err := status.Get("services").Get(serviceKey).Get("units").Get(serviceKey+"/0").Get("machine").String()
   machineID, err := status.GetPath("services", serviceKey, "units", serviceKey+"/0", "machine").String()
@@ -43,7 +43,7 @@ func vmSshForward(user string, controller *hivy.Controller, status *simplejson.J
 func Status(request *restful.Request, response *restful.Response) {
   user, _, err := security.Credentials(request)
   if err != nil { 
-    hivy.HTTPInternalError(response, err)
+    beacon.HTTPInternalError(response, err)
     return
   }
 
@@ -52,25 +52,25 @@ func Status(request *restful.Request, response *restful.Response) {
   if provider == "juju" {
     juju, err := NewJuju()
     if err != nil {
-      hivy.HTTPInternalError(response, err)
+      beacon.HTTPInternalError(response, err)
       return
     }
     report, err := juju.Status(user, id)
     if err != nil {
-      hivy.HTTPInternalError(response, err)
+      beacon.HTTPInternalError(response, err)
     } else {
       response.WriteEntity(report)
     }
     return
   }
-  hivy.HTTPInternalError(response, err)
+  beacon.HTTPInternalError(response, err)
 }
 
 // Deploy creates new nodes
 func Deploy(request *restful.Request, response *restful.Response) {
   user, _, err := security.Credentials(request)
   if err != nil { 
-    hivy.HTTPInternalError(response, err)
+    beacon.HTTPInternalError(response, err)
     return
   }
 
@@ -81,25 +81,25 @@ func Deploy(request *restful.Request, response *restful.Response) {
     //TODO For suitable charms, it could also deploy other clustered units
     juju, err := NewJuju()
     if err != nil {
-      hivy.HTTPInternalError(response, err)
+      beacon.HTTPInternalError(response, err)
       return
     }
     report, err := juju.Deploy(user, id)
     if err != nil {
-      hivy.HTTPInternalError(response, err)
+      beacon.HTTPInternalError(response, err)
     } else {
       response.WriteEntity(report)
     }
     return
   }
-  hivy.HTTPInternalError(response, err)
+  beacon.HTTPInternalError(response, err)
 }
 
 // Destroy removes nodes
 func Destroy(request *restful.Request, response *restful.Response) {
   user, _, err := security.Credentials(request)
   if err != nil { 
-    hivy.HTTPInternalError(response, err)
+    beacon.HTTPInternalError(response, err)
     return
   }
 
@@ -108,25 +108,25 @@ func Destroy(request *restful.Request, response *restful.Response) {
   if provider == "juju" {
     juju, err := NewJuju()
     if err != nil {
-      hivy.HTTPInternalError(response, err)
+      beacon.HTTPInternalError(response, err)
       return
     }
     report, err := juju.Destroy(user, id)
     if err != nil {
-      hivy.HTTPInternalError(response, err)
+      beacon.HTTPInternalError(response, err)
     } else {
       response.WriteEntity(report)
     }
     return
   }
-  hivy.HTTPInternalError(response, err)
+  beacon.HTTPInternalError(response, err)
 }
 
 // Plug allows interactions between two nodes
 func Plug(request *restful.Request, response *restful.Response) {
   user, _, err := security.Credentials(request)
   if err != nil { 
-    hivy.HTTPInternalError(response, err)
+    beacon.HTTPInternalError(response, err)
     return
   }
 
@@ -136,16 +136,16 @@ func Plug(request *restful.Request, response *restful.Response) {
   if provider == "juju" {
     juju, err := NewJuju()
     if err != nil {
-      hivy.HTTPInternalError(response, err)
+      beacon.HTTPInternalError(response, err)
       return
     }
     report, err := juju.AddRelation(user, id, withID)
     if err != nil {
-      hivy.HTTPInternalError(response, err)
+      beacon.HTTPInternalError(response, err)
     } else {
       response.WriteEntity(report)
     }
     return
   }
-  hivy.HTTPInternalError(response, err)
+  beacon.HTTPInternalError(response, err)
 }

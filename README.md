@@ -9,7 +9,8 @@ Hivy is the restful interface of the **Unide** project that wires users
 commands and backends services.
 
 Mostly it lets you setup and build a container powered by the
-[dna](https://github.com/hivetech/dna), optimized as a development workspace.
+[dna](https://github.com/hivetech/dna), optimized as a development workspace
+and ready to connect to other services as databases, dashboards...
 
 Out of the box it exposes [juju](https://juju.ubuntu.com/) command, users
 authentification, and admin related commands.  **Powerful IT infrasctructure
@@ -25,7 +26,7 @@ Status
 Branch   | Version
 -------- | -----
 Stable   | 0.1.5
-Develop  | 0.1.9
+Develop  | 0.2.9
 
 **Attention** Project is in an *early alpha*, and under heavy development.
 
@@ -41,7 +42,7 @@ available in your $PATH. You will need also a redis server for workers (powered
 by resque, go port).
 
 ```
-go get -v github.com/hivetech/hivy/app
+go get -v github.com/hivetech/hivy
 ```
 
 Or For development (it will setup etcd)
@@ -59,19 +60,24 @@ Usage
 ```console
 $ rake app:init  # Create admin user and set default hivy configuration
 $ hivy --help
-$ hivy -d node -n master --verbose  
+$ hivy -d .conf -n master --verbose  
 $ # Or full deployement
-$ forego start
+$ cd $HIVY_PATH/hivy && forego start
 
 $ # In another terminal
 $ # Create a new standard user
-$ curl --user admin:root http://127.0.0.1:8080/v0/methods/user?user=name&pass=pass&group=admin -X PUT
+$ curl --user admin:root http://127.0.0.1:8080/v0/methods/user?id=name&pass=pass&group=admin -X PUT
 $ curl --user name:pass http://127.0.0.1:8080/v0/methods/dummy  # Test your installation
-$ # With the provided clients
-$ ./scripts/request get v0/methods/help
-$ ./scripts/request put v0/methods/node?id=hivelab
-$ ./scripts/request get v0/methods/login > id_rsa
-$ ./scripts/request put v0/methods/node?id=hivelab
+
+$ # With the provided clients and boxcars proxy on
+$ ./scripts/request get help
+
+$ ./scripts/request put node?id=hivelab
+$ ./scripts/request put node?id=mysql
+$ ./scripts/request put node/plug?id=hivelab&with=mysql
+
+$ ./scripts/request get login > id_rsa
+$ ./scripts/request get node?id=hivelab
 $ ssh ubuntu@l$YOUR_HOST -p $SSH_PORT -i id_rsa
 
 $ # Configuration management
@@ -81,16 +87,16 @@ $ ./scripts/config set {user}/{node}/expose True
 ```
 
 
-Current API
------------
+API
+---
 
 Here are listed currently supported methods. With the `hivy app`, all
 need user:pass authentification, and permissions:
 
 ```console
 # Admin action methods
-PUT /v0/methods/user?user={user}&pass={pass}&group={group}
-DELETE /user?user={user}
+PUT /v0/methods/user?id={user}&pass={pass}&group={group}
+DELETE /user?id={user}
 # User methods
 GET /v0/methods/dummy/
 GET /v0/methods/help?method={method}  # method is optionnal

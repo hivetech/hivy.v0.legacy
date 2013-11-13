@@ -16,6 +16,8 @@
   export portRangeEnd=65535
 # )
 
+#TODO Mobile notification
+
 function setup_new_chain() {
   sudo iptables -t nat -N ${RULES_NAME}
   sudo iptables -t nat -A PREROUTING -m addrtype --dst-type LOCAL -j ${RULES_NAME}

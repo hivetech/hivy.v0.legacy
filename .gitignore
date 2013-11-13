@@ -34,3 +34,6 @@ hivy
 
 # Python
 *.pyc
+
+# Private mailgun script
+scripts/mail-me.sh

@@ -1,6 +1,0 @@
-web: GOMAXPROCS=2 app --listen 127.0.0.1:8080 --verbose --profile
-config: pgrep --count etcd > /dev/null || etcd -c 0.0.0.0:4001 -n master -d .conf -v && while true; do sleep 10000; done
-worker: echo "worker listening" && worker -queues fork -interval 5
-queues: pgrep --count redis > /dev/null || redis-server && while true; do sleep 10000; done
-proxy: DEBUG=* boxcars -port=8081 proxy/routes.json
-monitor: serf agent -role=origin -log-level=debug -event-handler "member-join=scripts/update_network.sh"

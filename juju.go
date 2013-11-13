@@ -1,4 +1,4 @@
-package main
+package hivy
 
 import (
   "fmt"
@@ -14,7 +14,7 @@ import (
   "launchpad.net/loggo"
   "github.com/bitly/go-simplejson"
 
-  "github.com/hivetech/hivy"
+  "github.com/hivetech/hivy/beacon"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 // Juju is a provider used for Nodes management
 type Juju struct {
   Path string
-  Controller *hivy.Controller
+  Controller *beacon.Controller
 }
 
 // NewJuju initializes juju provider informations
@@ -41,7 +41,7 @@ func NewJuju() (*Juju, error) {
 
   var debug bool
   if log.LogLevel() <= loggo.DEBUG { debug = true }
-  c := hivy.NewController(user, debug)
+  c := beacon.NewController(user, debug)
 
   return &Juju{
     Path: jp,
@@ -117,6 +117,7 @@ func (jj *Juju) fetchConfig(user, service string) (string, error) {
 
 // Status fetches given service informations
 func (jj *Juju) Status(user, service string) (*simplejson.Json, error) {
+  //TODO Without id, should return every services matching {user}-*, not everything
   id := jj.id(user, service)
   args := []string{"status", "--format", "json"}
   if service != "" {

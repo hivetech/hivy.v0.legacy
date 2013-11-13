@@ -6,8 +6,6 @@ USER=xav
 PASS=boss
 #USER=admin
 #PASS=root
-#MAJOR_VERSION=v0
-#PREFIX=$MAJOR_VERSION/methods
 PREFIX="api/methods"
 
 METHOD=$1

@@ -6,4 +6,4 @@
 # Distributed under terms of the MIT license.
 #
 
-redis-cli -r 100 RPUSH resque:queue:hello '{"class":"Hello","args":["hi","there"]}'
+redis-cli -r 100 RPUSH resque:queue:forker '{"class":"Hivy","args":["ls", "-al"]}'

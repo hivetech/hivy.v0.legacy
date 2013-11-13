@@ -1,4 +1,4 @@
-package main
+package hivy
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"github.com/emicklei/go-restful"
 
 	"github.com/hivetech/hivy/security"
-  "github.com/hivetech/hivy"
+  "github.com/hivetech/hivy/beacon"
 )
 
 // Get the certificate filename to return
@@ -25,7 +25,7 @@ func sshKey() (string, error) {
 func Login(request *restful.Request, response *restful.Response) {
 	user, _, err := security.Credentials(request)
 	if err != nil {
-		hivy.HTTPInternalError(response, err)
+		beacon.HTTPInternalError(response, err)
 		return
 	}
 	log.Debugf("Providing a new ssh key to", user)

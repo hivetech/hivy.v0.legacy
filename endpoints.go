@@ -1,9 +1,12 @@
-package main
+package hivy
 
 import (
+	"launchpad.net/loggo"
 	"github.com/bitly/go-simplejson"
 	"github.com/emicklei/go-restful"
 )
+
+var log = loggo.GetLogger("hivy.endpoint")
 
 // JSON converts string to simple.Json object
 func JSON(data string) *simplejson.Json {

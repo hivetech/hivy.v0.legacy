@@ -38,15 +38,15 @@ Suit up
 First make sure [etcd binary](https://github.com/coreos/etcd/releases/) is available in your `$PATH.`
 
 ```
-go get -v github.com/hivetech/hivy
+go get -v github.com/hivetech/hivy/beacon
 ```
 
 Or For development (it will setup etcd)
 
 ```console
 $ git clone https://github.com/hivetech/hivy.git
-$ make
-$ make tests
+$ rake install
+$ rake tests:check
 ```
 
 Usage

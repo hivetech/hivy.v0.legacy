@@ -6,21 +6,21 @@ import (
   "github.com/benmanns/goworker"
   "launchpad.net/loggo"
 
-  "github.com/hivetech/hivy"
+  "github.com/hivetech/hivy/beacon"
 )
 
 var log = loggo.GetLogger("hivy.worker")
 
 type hivyWorker struct {
   channel string
-  controller *hivy.Controller
+  controller *beacon.Controller
 }
 
 func newHivyWorker() *hivyWorker {
   return &hivyWorker{
     channel: "Hivy",
     //TODO Hard coded
-    controller: hivy.NewController("worker", false),
+    controller: beacon.NewController("worker", false),
   }
 }
 
@@ -29,7 +29,7 @@ func init() {
   logfile := ""
   verbose := true
   modules := []string{"hivy.worker"}
-  hivy.SetupLog(modules, verbose, logfile)
+  beacon.SetupLog(modules, verbose, logfile)
 }
 
 func main() {

@@ -1,6 +1,6 @@
 #! /bin/bash
 
-IP=192.168.0.12
+IP=$(hostname -I | awk '{print $1}')
 PORT=8081
 PATH_KEY=$2
 VALUE=$3

@@ -1,4 +1,4 @@
-package hivy
+package beacon
 
 import (
 	"net/http"
