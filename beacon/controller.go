@@ -59,7 +59,7 @@ func (c *Controller) Delete(path string) (*etcd.Response, error) {
 }
 
 func (c *Controller) setMethodPermission(method, permission string) error {
-  //TODO Temporary permission with ttl ?
+  //NOTE Temporary permission with ttl ?
   var ttl uint64
   // Setting /hivy/security/{user}/methods/{method} to "true" makes {method}
   // available for {user]
@@ -107,7 +107,7 @@ func (c *Controller) CheckMethod(method string) (bool, error) {
 func (c *Controller) Ressource(name string) (string, error) {
   result, err := c.db.Get(filepath.Join("hivy/security", c.user, "ressources", name))
   if err != nil {
-    log.Errorf("[controller.CheckMethod] %v\n", err)
+    log.Errorf("[controller.Ressource] %v\n", err)
     return "", err
   }
   return result[0].Value, nil
@@ -148,9 +148,11 @@ func (c *Controller) updateMachinesRessource(operation int) error {
 // Update actualize states in the database regarding the given request
 func (c *Controller) Update(method string) error {
   switch {
-  case strings.Contains(method, "deploy"):
-    log.Infof("Updating machines ressource (+1)\n")
-    return c.updateMachinesRessource(1)
+  case strings.Contains(method, "node"):
+    if strings.Contains(method, "PUT") {
+      log.Infof("Updating machines ressource (+1)\n")
+      return c.updateMachinesRessource(1)
+    }
   }
   return nil
 }
