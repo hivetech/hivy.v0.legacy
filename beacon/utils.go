@@ -1,4 +1,4 @@
-package main
+package beacon
 
 import (
 	"fmt"
@@ -8,14 +8,41 @@ import (
 	"os/signal"
 )
 
+var log = loggo.GetLogger("hivy")
+
 const (
 	superVerboseLogLevel loggo.Level = loggo.TRACE
 	verboseLogLevel      loggo.Level = loggo.INFO
 	defaultLogLevel      loggo.Level = loggo.WARNING
-	currentVersion       string      = "0.1.0"
 	// Change here to absolute or relative path if etcd is not in your $PATH
 	etcdBin string = "etcd"
+
+	// Allowed is a macro representing an accessible method
+	Allowed string = "true"
+	// Forbidden is a macro representing an hiden method
+	Forbidden string = "false"
 )
+
+// Version follows unstable git tag
+type Version struct {
+    major int
+    minor int
+    fix   int
+}
+
+func (v *Version) String() string {
+    return fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.fix)
+}
+
+// StableVersion is a Modest accessor
+//TODO Read git tag to make it automatic
+func StableVersion() Version { 
+    return Version{
+        major: 0,
+        minor: 1,
+        fix: 5,
+    }
+}
 
 // RunEtcd launchs an http-based key-value storage that holds user and system
 // configuration. Here is spawned a new instance, restricted to relevant
@@ -66,13 +93,14 @@ func RunEtcd(stop chan bool, name, directory, clientIP, raftIP, clusterIP string
 }
 
 // SetupLog set application's modules log level
-func SetupLog(verbose bool, logfile string) error {
-	//TODO logfile handler
-	var appModules = []string{
-		"hivy.main",
-		"hivy.endpoints",
+func SetupLog(appModules []string, verbose bool, logfile string) error {
+	var hivyModules = []string{
+		"hivy",
 		"hivy.security",
 	}
+  for _, module := range appModules {
+    hivyModules = append(hivyModules, module)
+  }
 	logLevel := defaultLogLevel
 	if verbose {
 		logLevel = superVerboseLogLevel
@@ -93,20 +121,15 @@ func SetupLog(verbose bool, logfile string) error {
 	}
 
 	// Central log level configuration
-	for _, module := range appModules {
+	for _, module := range hivyModules {
 		if err := loggo.ConfigureLoggers(module + "=" + logLevel.String()); err != nil {
 			return err
 		}
 	}
 
-	log.Debugf("logging level:", loggo.LoggerInfo())
+	//log.Debugf("logging level:", loggo.LoggerInfo())
 	return nil
 }
-
-// Version is a Modest accessor
-//TODO Read git tag to make it automatic
-//     return fmt.Sprintf("%d.%d.%d", major, minor, fix)
-func Version() string { return currentVersion }
 
 // CatchInterruption handles SIGINT signal to clean the application before
 // exiting. If th stop channel exists it will trigger a signal usuable elsewhere

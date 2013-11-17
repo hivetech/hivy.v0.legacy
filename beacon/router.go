@@ -1,4 +1,4 @@
-package main
+package beacon
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 
 // Router is the main functionnal entry point
 type Router struct {
+    prefix string
 	authentification restful.FilterFunction
 	control          restful.FilterFunction
 	profiling        bool
@@ -38,7 +39,7 @@ func parsePath(path string) (string, string, error) {
 			paramPath = "/" + strings.Join(splittedPath[paramPathIndex:], "/")
 		}
 	}
-	return ("/" + splittedPath[rootPathIndex]), paramPath, nil
+	return (splittedPath[rootPathIndex]), paramPath, nil
 }
 
 func parseRequest(request string) (string, string, error) {
@@ -57,7 +58,7 @@ func setupProfiling() {
 	restful.Filter(func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 		cfg := profile.Config{
 			Quiet:          false,
-			ProfilePath:    "./profile/" + FormatMethod(request),
+			ProfilePath:    "./.profile/" + FormatMethod(request),
 			CPUProfile:     true,
 			MemProfile:     true,
 			NoShutdownHook: true, // do not hook SIGINT
@@ -87,7 +88,10 @@ func NewRouter(a, c restful.FilterFunction, profiling bool) *Router {
 		c = IdentityFilter
 	}
 
+  version := StableVersion()
+
 	return &Router{
+        prefix: fmt.Sprintf("/v%d/methods/", version.major),
 		authentification: a,
 		control:          c,
 		profiling:        profiling,
@@ -137,7 +141,7 @@ func (a *Router) Map(request string, callback restful.RouteFunction) error {
 	// Instanciate a new route at /{path} that returns json data
 	ws := new(restful.WebService)
 	//TODO To be coherent with etcd, path sould begin with /v1/methods/
-	ws.Path(rootPath).
+	ws.Path(a.prefix + rootPath).
 		Consumes("*/*").
 		Produces(restful.MIME_JSON)
 
@@ -176,7 +180,7 @@ func (a *Router) MultiMap(mapping map[string]restful.RouteFunction) error {
 
 	// Instanciate a new route at /{path} that returns json data
 	ws := new(restful.WebService)
-	ws.Path(rootPath).
+	ws.Path(a.prefix + rootPath).
 		Consumes("*/*").
 		Produces(restful.MIME_JSON)
 

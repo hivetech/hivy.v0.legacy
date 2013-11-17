@@ -25,12 +25,14 @@ _testmain.go
 *~
 
 # Runtime
-node*
-profile
+hivy/.conf*
+hivy/.profile
 vendor
 ca*
-hivy
+hivy/hivy
 *.log
 
 # Python
 *.pyc
+
+showcase

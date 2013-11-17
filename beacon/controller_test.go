@@ -1,4 +1,4 @@
-package main
+package beacon
 
 import (
 	"launchpad.net/gocheck"

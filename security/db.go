@@ -1,12 +1,12 @@
 package security
 
 import (
+  "fmt"
 	"database/sql"
-	"fmt"
 	"path/filepath"
 
-	// Requested by the lib
 	"github.com/coreos/go-etcd/etcd"
+	// Requested by the lib
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -48,9 +48,13 @@ func EtcdCheckCredentials(username, hash string, debug bool) (bool, error) {
 		etcd.OpenDebug()
 		defer etcd.CloseDebug()
 	}
-	storage := etcd.NewClient()
+  //FIXME Should I use controller here ?
+  machines := []string{"http://127.0.0.1:4001"}
+  storage := etcd.NewClient(machines)
 	// Global settings
 	response, err := storage.Get(filepath.Join("hivy/security", username, "password"))
+  fmt.Println(response)
+  fmt.Println(username)
 	if err != nil || len(response) != 1 {
 		return false, fmt.Errorf("[db.EtcdCheckCredentials::storage.Get] %v\n", err)
 	}
