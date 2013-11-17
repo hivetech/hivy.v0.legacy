@@ -10,7 +10,7 @@
 require "awesome_print"
 
 logs = "/tmp/hivy.rake"
-charmstore = "~/dev/projects/hivetech/cells"
+charmstore = ENV["HOME"] + "/dev/projects/hivetech/cells"
 
 task :default => [:install]
 
@@ -42,6 +42,21 @@ namespace :install do
     cmd = "cd hivy && go install"
     result = system(cmd)
     raise("optparse installation failed..  msg: #{$?}") unless result
+  end
+
+  desc "Install hivy backends dependencies"
+  task :vendor do
+    msg "install serf, service orchestration and monitoring"
+    sh "./scripts/install_serf.sh 0.2.1_linux_amd64"
+    msg "install redis, jobs queue"
+    sh "sudo apt-get install redis-server"
+    msg "install lxc containers technology"
+    sh "sudo apt-get install lxc"
+    #FIXME go get ends up with an error
+    #msg "download juju-core"
+    #sh "go get -u launchpad.net/juju-core"
+    #msg "install juju-core"
+    #sh "cd \"#{ENV["GOPATH"]}/src/launchpad.net/juju-core\" && make install"
   end
 
   desc "Install configuration storage, etcd"
@@ -84,6 +99,7 @@ namespace :app do
     sh "curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/PUT/v0/methods/user -d value=1"
     sh "curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/v0/methods/help -d value=1"
     sh "curl -L http://127.0.0.1:4001/v1/keys/hivy/security/admin/methods/GET/v0/methods/dummy -d value=1"
+    sh "curl -L http://127.0.0.1:4001/v1/keys/hivy/mapping/port -d value=49153"
     sh "killall etcd"
   end
 

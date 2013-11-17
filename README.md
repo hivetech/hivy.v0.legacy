@@ -16,6 +16,7 @@ Out of the box it exposes [juju](https://juju.ubuntu.com/) command, users
 authentification, and admin related commands.  **Powerful IT infrasctructure
 building accessible from robust but simple http requests !**
 
+[See it in action](http://asciinema.org/a/6388)
 
 Status
 ------

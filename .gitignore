@@ -25,15 +25,14 @@ _testmain.go
 *~
 
 # Runtime
-.conf*
-.profile
+hivy/.conf*
+hivy/.profile
 vendor
 ca*
-hivy
+hivy/hivy
 *.log
 
 # Python
 *.pyc
 
-# Private mailgun script
-scripts/mail-me.sh
+showcase

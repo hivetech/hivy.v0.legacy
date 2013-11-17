@@ -1,0 +1,59 @@
+#! /bin/bash
+
+# const (
+  IP=$(hostname -I | awk '{print $1}')
+  PORT=8081
+# )
+
+function pre_processing() {
+  http_method="GET"
+  path=""
+  parameter=""
+  if [ "${get}" != "" ]; then
+    path=${get}
+  elif [ "${put}" != "" ]; then
+    path=$(echo ${put} | cut -d: -f1)
+    parameter=$(echo ${put} | cut -d: -f2)
+    http_method="PUT"
+  elif [ "${delete}" != "" ]; then
+    path=${delete}
+    http_method="DELETE"
+  fi
+
+  [ "$config" == "true" ] && path=api/conf/$path
+  [ "$method" == "true" ] && path=api/methods/$path
+}
+
+function main() {
+  if [ "${http_method}" == "PUT" ]; then
+    log "curl -L --user ${auth} -X ${http_method} http:/$IP:$PORT/${path} -d value=${parameter}"
+    curl -L -X ${http_method} http://$IP:$PORT/${path} -d value=${parameter} | underscore print --color
+  else
+    log "curl -L --user ${auth} -X ${http_method} http:/$IP:$PORT/${path}"
+    if [ -n "$(echo ${path} | grep conf)" ]; then
+      curl -L -X ${http_method} http://$IP:$PORT/${path} | underscore print --color
+    else
+      http --auth ${auth} ${http_method} http://$IP:$PORT/${path}
+    fi
+  fi
+  success "Done with status: $? $(icon check)"
+}
+
+source optparse.bash
+source utils.bash
+source shml.sh
+
+# cli management
+optparse.define short=v long=verbose desc="Flag to set verbose mode on" variable=verbose value=true default=false
+optparse.define short=c long=config desc="Shortcut to hit config endpoint" variable=config value=true default=false
+optparse.define short=m long=method desc="Shortcut to hit methods endpoint" variable=method value=true default=false
+optparse.define short=a long=auth desc="Http style credentials user:pass" variable=auth default="xav:boss"
+optparse.define short=g long=get desc="Http Get method path" variable=get
+optparse.define short=d long=delete desc="Http delete method path" variable=delete
+optparse.define short=s long=put desc="Http put method path:value" variable=put
+
+source $( optparse.build )
+# --------------
+
+pre_processing
+main
