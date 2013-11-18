@@ -174,10 +174,10 @@ func (jj *Juju) Deploy(user, service string) (*simplejson.Json, error) {
   }
 
   // Charm deployment
-  //log.Infof("enqueue process")
-  //client, err := goresque.Dial(redisURL)
-  //if err != nil { return EmptyJSON(), err }
-  //client.Enqueue(workerClass, "fork", jj.Path, args)
+  log.Infof("enqueue process")
+  client, err := goresque.Dial(redisURL)
+  if err != nil { return EmptyJSON(), err }
+  client.Enqueue(workerClass, "fork", jj.Path, args)
 
   report.Set("deployed", id)
   report.Set("provider", "juju")

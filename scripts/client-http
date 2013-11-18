@@ -25,16 +25,17 @@ function pre_processing() {
 }
 
 function main() {
-  if [ "${http_method}" == "PUT" ]; then
-    log "curl -L --user ${auth} -X ${http_method} http:/$IP:$PORT/${path} -d value=${parameter}"
-    curl -L -X ${http_method} http://$IP:$PORT/${path} -d value=${parameter} | underscore print --color
+  if [ -n "$(echo ${path} | grep conf)" ]; then
+    if [ "${http_method}" == "PUT" ]; then
+      log "curl -L --user ${auth} -X ${http_method} http:/$IP:$PORT/${path} -d value=${parameter}"
+      curl -L -X ${http_method} http://$IP:$PORT/${path} -d value=${parameter} | underscore print --color
+    else
+      log "curl -L --user ${auth} -X ${http_method} http:/$IP:$PORT/${path}"
+      curl -L -X ${http_method} http://$IP:$PORT/${path} | underscore print --color
+    fi
   else
     log "curl -L --user ${auth} -X ${http_method} http:/$IP:$PORT/${path}"
-    if [ -n "$(echo ${path} | grep conf)" ]; then
-      curl -L -X ${http_method} http://$IP:$PORT/${path} | underscore print --color
-    else
-      http --auth ${auth} ${http_method} http://$IP:$PORT/${path}
-    fi
+    http --auth ${auth} ${http_method} http://$IP:$PORT/${path}
   fi
   success "Done with status: $? $(icon check)"
 }

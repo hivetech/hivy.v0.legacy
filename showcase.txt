@@ -1,0 +1,39 @@
+# A quick introduction to Unide
+client-http --get api/methods/help -v
+# More specific help
+client-http --get api/methods/help/login -v
+
+# Ok, let's setup our futur workspace
+client-http --put api/conf/hivelab/dev/python-version 2.7.5 -v
+client-http --config --put hivelab/shell/distribution ohmyzsh
+# Check the current config
+client-http --get api/conf/hivelab -v
+# There are many parameters, but all have a default value so we don't need to set everything
+more hivy/sample-hivy.yml
+
+# Deployment !
+client-http --put api/methods/node?id=hivelab -v
+# Now a database
+client-http --put api/methods/node?id=mysql
+# And we want our two nodes to work together
+client-http --put "api/methods/node/plug?id=hivelab\&with=mysql"
+# Are we up and running ?
+client-http --get api/methods/node?id=hivelab -v
+# Notice agent-state is started and we have an ssh port to connect to
+
+# So we fetch back our private key and reach our new environment
+client-http --get api/methods/login > id_rsa
+ssh ubuntu@$HIVY_IP -p 49158 -i id_rsa
+
+    # Welcome ! There is a cheatsheet to see what's out there
+    cheat lab
+    cheat git-extras
+    # And the database we deployed is ready to use
+    echo $DB_NAME
+    echo $DB_USER
+    exit
+
+# Say we changed the world and no longer need the hivelab
+client-http --delete api/methods/node?id=hivelab
+# The End
+client-http --get api/methods/node?id=hivelab
