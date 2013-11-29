@@ -91,7 +91,7 @@ func NewRouter(a, c restful.FilterFunction, profiling bool) *Router {
   version := StableVersion()
 
 	return &Router{
-        prefix: fmt.Sprintf("/v%d/methods/", version.major),
+    prefix: fmt.Sprintf("/v%d/methods/", version.major),
 		authentification: a,
 		control:          c,
 		profiling:        profiling,

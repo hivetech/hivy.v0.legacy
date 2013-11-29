@@ -20,6 +20,7 @@ type Controller struct {
   db          *etcd.Client
   maxMachines int
   user        string
+  sorted      bool
 }
 
 // NewController setup debug mode and return an initialized controller
@@ -35,6 +36,7 @@ func NewController(user string, debug bool) *Controller {
     db:          etcd.NewClient(machines),
     maxMachines: MaxMachinesRule,
     user:        user,
+    sorted:      true,
   }
 }
 
@@ -49,8 +51,8 @@ func (c *Controller) Set(key, value string, ttl uint64) (*etcd.Response, error) 
 }
 
 // Get wraps go-etcd Get method
-func (c *Controller) Get(path string) ([]*etcd.Response, error) {
-  return c.db.Get(path)
+func (c *Controller) Get(path string) (*etcd.Response, error) {
+  return c.db.Get(path, c.sorted)
 }
 
 // Delete wraps go-etcd Delete method
@@ -88,12 +90,12 @@ func (c *Controller) DisableMethod(method string) error {
 // CheckMethod makes sure the given one is like GET/path/to/endpoint (without parameters)
 func (c *Controller) CheckMethod(method string) (bool, error) {
   // Permission needs /hivy/security/{user}/methods/{method} to exist
-  result, err := c.db.Get(filepath.Join("hivy/security", c.user, "methods", method))
+  result, err := c.db.Get(filepath.Join("hivy/security", c.user, "methods", method), c.sorted)
 
   if err != nil {
     log.Errorf("[controller.CheckMethod] %v\n", err)
     return false, err
-  } else if result[0].Value == "false" {
+  } else if result.Value == "false" {
     log.Infof("[controller.CheckMethod] Method forbidden\n")
     return false, nil
   }
@@ -105,12 +107,12 @@ func (c *Controller) CheckMethod(method string) (bool, error) {
 // Ressource the current state or value of the given ressource name
 // Localtion: v1/keys/hivy/security/{user}/ressources/{ressource}
 func (c *Controller) Ressource(name string) (string, error) {
-  result, err := c.db.Get(filepath.Join("hivy/security", c.user, "ressources", name))
+  result, err := c.db.Get(filepath.Join("hivy/security", c.user, "ressources", name), c.sorted)
   if err != nil {
     log.Errorf("[controller.Ressource] %v\n", err)
     return "", err
   }
-  return result[0].Value, nil
+  return result.Value, nil
 }
 
 func (c *Controller) updateMachinesRessource(operation int) error {

@@ -62,10 +62,10 @@ func (jj *Juju) Charmstore(service string) (string, string, error) {
   //TODO If service contains github url, eventually download it and set charmstore := github_charmstore
 
   result, err := jj.Controller.Get(filepath.Join("hivy", "charmstore"))
-  if err != nil || len(result) != 1 {
+  if err != nil {
     return "", "", err
   }
-  path := result[0].Value
+  path := result.Value
 
   // Default is local storage
   prefix := "local"
@@ -89,7 +89,7 @@ func (jj *Juju) fetchConfig(user, service string) (string, error) {
     "serf-ip", "dna-repo", "targets", "app-repo", "extra-packages",
     "openlibs", "editor", "terminal_multiplexer", "plugins",
     "shell/default", "shell/prompt",
-    "dev/node_version", "dev/go_version", "dev/python_version",
+    "dev/ruby_manager", "dev/ruby_version", "dev/node_version", "dev/go_version", "dev/python_version",
   }
   config := make(map[string]string)
 
@@ -97,9 +97,9 @@ func (jj *Juju) fetchConfig(user, service string) (string, error) {
   log.Infof("reading configuration for node %s\n", jj.id(user, service))
   for _, key := range configLabTree {
     result, err := jj.Controller.Get(filepath.Join(user, service, key))
-    if err == nil && len(result) == 1 {
-      log.Infof("[config] %s = %s\n", strings.Replace(key, "/", ".", -1), result[0].Value)
-      config[strings.Replace(key, "/", "-", -1)] = result[0].Value 
+    if err == nil {
+      log.Infof("[config] %s = %s\n", strings.Replace(key, "/", ".", -1), result.Value)
+      config[strings.Replace(key, "/", "-", -1)] = result.Value 
     }
   }
 

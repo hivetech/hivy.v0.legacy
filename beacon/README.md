@@ -26,7 +26,6 @@ Batteries inluded
 * Plug and play endpoints, authentification and permission methods
 * But not only, up to 2 filters actually before endpoint processing
 * Secured, higly-available and centralized configuration storage
-* Mysql-ready for users logins
 * Debug client provided, easy to write one
 * Ready for load-balancing and multi-hosts
 * Built-in profiling

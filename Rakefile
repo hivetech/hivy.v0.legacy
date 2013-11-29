@@ -7,35 +7,60 @@
 # Feedback appreciated: xavier.bruhiere@gmail.com
 
 # https://github.com/michaeldv/awesome_print
-require "awesome_print"
+#require "awesome_print"
 
 logs = "/tmp/hivy.rake"
-charmstore = ENV["HOME"] + "/dev/projects/hivetech/cells"
+hivy_charm_repo = "https://github.com/hivetech/cells.git"
+charmstore = ENV["HOME"] + "/cells"
+goworkspace = ENV["HOME"] + "/goworkspace"
 
 task :default => [:install]
 
 desc "Install hivy application"
-task :install => [ "install:deps", "install:etcd", "install:extras" ]
+task :install => [ "install:deps", "install:vendor", "install:compile" ]
 
 desc "update hivy dependencies"
-task :update => [ "install", "tests:deps" ]
+task :update => [ "install" ]
 
 desc "update hivy dependencies"
 task :tests => [ "tests:check", "tests:coverage", "tests:style" ]
 
 namespace :install do
-  #TODO serf
+  desc "Install go version 1.1.1"
+  task :go do
+    msg "Install go version 1.1.1"
+    sh "sudo apt-get install -y python-software-properties"
+    sh "sudo add-apt-repository -y -s ppa:duh/golang"
+    sh "sudo apt-get update"
+    sh "sudo apt-get install -y golang"
+    sh "go version"
+    msg "Create workspace"
+    sh "mkdir #{goworkspace}"
+  end
+
   desc "Install app dependencies"
   task :deps do
+    msg "Install package dependencies"
+    sh "sudo apt-get install bzr mercurial"
+    msg "install go dependencies"
+    sh "go get -v -u github.com/benmanns/goworker"
+    sh "go get -v -u github.com/ddollar/forego"
+    sh "go get -v -u github.com/codegangsta/cli"     
+    msg "install boxcars proxy"
+    #FIXME Need stable version: sh "go get -u github.com/hivetech/boxcars/boxcars"
+    sh "go get -v -u github.com/azer/boxcars/boxcars"     
     msg "installs deps manager: gom"
     sh "go get -u github.com/mattn/gom"
     msg "generate go dependencies"
     sh "test -f Gomfile || gom gen gomfile"
     msg "for dev time, remove hivetech libs from deps"
     sh "sed -i '/hivetech/d' Gomfile"
-    msg "install go dependencies"
-    sh "cat Gomfile | sed -e s/gom\\ // | xargs go get -u"
+    sh "cat Gomfile | sed -e s/gom\\ // | xargs go get -v -u"
+  end
 
+  desc "Compile workers and hivy"
+  task :compile do
+    msg "Compile workers and hivy"
     msg "compile and install workers"
     sh "cd worker && go install"
     msg "compile and install hivy app"
@@ -46,37 +71,35 @@ namespace :install do
 
   desc "Install hivy backends dependencies"
   task :vendor do
-    msg "install serf, service orchestration and monitoring"
-    sh "./scripts/install_serf.sh 0.2.1_linux_amd64"
-    msg "install redis, jobs queue"
-    sh "sudo apt-get install redis-server"
-    msg "install lxc containers technology"
-    sh "sudo apt-get install lxc"
-    #FIXME go get ends up with an error
-    #msg "download juju-core"
-    #sh "go get -u launchpad.net/juju-core"
-    #msg "install juju-core"
-    #sh "cd \"#{ENV["GOPATH"]}/src/launchpad.net/juju-core\" && make install"
-  end
-
-  desc "Install configuration storage, etcd"
-  task :etcd do
     msg "fetch etcd code"
     sh "test -d /tmp/etcd || git clone https://github.com/coreos/etcd.git /tmp/etcd"
     msg "build and install it"
     sh "cd /tmp/etcd/ && ./build"
     sh "test -f /tmp/etcd/etcd && cp /tmp/etcd/etcd ${GOPATH}/bin"
+
+    msg "install serf, service orchestration and monitoring"
+    sh "./scripts/install_serf.sh 0.2.1_linux_amd64"
+
+    msg "install redis, jobs queue"
+    sh "sudo apt-get install -y redis-server"
+
+    msg "install lxc containers technology"
+    sh "sudo apt-get install -y lxc"
+
+    msg "Download hivy charms"
+    sh "[ -d #{charmstore} ] || git clone #{hivy_charm_repo} #{charmstore}"
+
+    #FIXME go get ends up with an error
+    msg "download juju-core"
+    sh "go get -v launchpad.net/juju-core/..."
   end
 
   desc "requested packages for hivy app and scripts"
-  task :extras do
+  task :client do
     msg "Installing extra client dependencies"
     sh "sudo pip install -U httpie"
 
-    msg "install boxcars proxy"
-    #FIXME Need stable version: sh "go get -u github.com/hivetech/boxcars/boxcars"
-    sh "go get -u github.com/azer/boxcars/boxcars"     
-    sh "go get -u github.com/codegangsta/cli"     
+    #TODO needs npm and node to be installed
     sh "npm install -g underscore-cli"
   end
 
@@ -142,7 +165,6 @@ namespace :tests do
     sh "go get -u github.com/axw/gocov/gocov"
     sh "go get -u github.com/golang/lint/golint"
     sh "go get -u github.com/davecheney/profile"
-    sh "go get -u github.com/ddollar/forego"
     sh "go get -u github.com/mreiferson/go-httpclient"
   end
 
@@ -178,5 +200,6 @@ end
 private
 
 def msg(text)
-    ap "  => rake: #{text}"
+    #ap "  => rake: #{text}"
+    puts "  => rake: #{text}"
 end

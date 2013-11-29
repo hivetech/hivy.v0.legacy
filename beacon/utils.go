@@ -8,7 +8,7 @@ import (
 	"os/signal"
 )
 
-var log = loggo.GetLogger("hivy")
+var log = loggo.GetLogger("hivy.beacon")
 
 const (
 	superVerboseLogLevel loggo.Level = loggo.TRACE
@@ -96,6 +96,8 @@ func RunEtcd(stop chan bool, name, directory, clientIP, raftIP, clusterIP string
 func SetupLog(appModules []string, verbose bool, logfile string) error {
 	var hivyModules = []string{
 		"hivy",
+		"hivy.app",
+		"hivy.beacon",
 		"hivy.security",
 	}
   for _, module := range appModules {

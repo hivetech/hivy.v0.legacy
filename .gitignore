@@ -36,3 +36,8 @@ hivy/hivy
 *.pyc
 
 showcase
+
+.vagrant
+
+# redis
+*.rdb

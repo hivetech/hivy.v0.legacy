@@ -12,7 +12,7 @@ import (
 var log = loggo.GetLogger("hivy.worker")
 
 type hivyWorker struct {
-  channel string
+  channel    string
   controller *beacon.Controller
 }
 
@@ -34,6 +34,6 @@ func init() {
 
 func main() {
   if err := goworker.Work(); err != nil {
-      fmt.Println("Error:", err)
+    fmt.Println("Error:", err)
   }
 }

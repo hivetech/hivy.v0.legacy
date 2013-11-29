@@ -8,7 +8,7 @@ Hivy
 Hivy is the restful interface of the **Unide** project that wires users
 commands and backends services.
 
-Mostly it lets you setup and build a container powered by the
+Mostly it lets you setup and build a container powered by 
 [dna](https://github.com/hivetech/dna), optimized as a development workspace
 and ready to connect to other services as databases, dashboards...
 
@@ -23,11 +23,12 @@ Status
 
 [![Build Status](https://drone.io/github.com/hivetech/hivy/status.png)](https://drone.io/github.com/hivetech/hivy/latest)
 [![Coverage Status](https://coveralls.io/repos/hivetech/hivy/badge.png?branch=develop)](https://coveralls.io/r/hivetech/hivy?branch=develop)
+[![GoDoc](https://godoc.org/github.com/hivetech/hivy?status.png)](http://godoc.org/github.com/hivetech/hivy)
 
 Branch   | Version
 -------- | -----
-Stable   | 0.1.5
-Develop  | 0.2.9
+Stable   | 0.3.1
+Develop  | 0.3.1
 
 **Attention** Project is in an *early alpha*, and under heavy development.
 
@@ -43,14 +44,16 @@ available in your $PATH. You will need also a redis server for workers (powered
 by resque, go port).
 
 ```
-go get -v github.com/hivetech/hivy
+go get -v github.com/hivetech/hivy/...
 ```
 
 Or For development (it will setup etcd)
 
 ```console
 $ git clone https://github.com/hivetech/hivy.git
-$ cd app && rake
+$ (sudo) gem install awesome_print rake
+$ cd app && rake install
+$ rake install:extras
 
 $ rake app:run
 ```
@@ -70,21 +73,21 @@ $ # Create a new standard user
 $ curl --user admin:root http://127.0.0.1:8080/v0/methods/user?id=name&pass=pass&group=admin -X PUT
 $ curl --user name:pass http://127.0.0.1:8080/v0/methods/dummy  # Test your installation
 
-$ # With the provided clients and boxcars proxy on
-$ ./scripts/request get help
+$ # With the provided clients, in scripts, and boxcars proxy on
+$ ./http-client --get api/methods/help --verbose
 
-$ ./scripts/request put node?id=hivelab
-$ ./scripts/request put node?id=mysql
-$ ./scripts/request put node/plug?id=hivelab&with=mysql
+$ ./http-client --put api/methods/node?id=hivelab
+$ ./http-client --put api/methods/node?id=mysql
+$ ./http-client --put api/methods/node/plug?id=hivelab&with=mysql
 
-$ ./scripts/request get login > id_rsa
-$ ./scripts/request get node?id=hivelab
+$ ./http-client --get api/methods/login > id_rsa
+$ ./http-client --get api/methods/node?id=hivelab
 $ ssh ubuntu@l$YOUR_HOST -p $SSH_PORT -i id_rsa
 
 $ # Configuration management
-$ ./scripts/config set hivy/security/{user}/password secret
-$ ./scripts/config set {user}/{node}/series precise
-$ ./scripts/config set {user}/{node}/expose True
+$ ./http-client --put api/conf/hivy/security/{user}/password:secret
+$ ./http-client --put api/conf/{user}/{node}/series:precise
+$ ./http-client --put api/conf/{user}/{node}/expose:True
 ```
 
 
