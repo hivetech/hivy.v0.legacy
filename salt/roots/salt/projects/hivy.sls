@@ -1,12 +1,13 @@
 dependencies:
   pkg.installed:
-    - pkgs :
+    - reload_modules: true
+    - pkgs:
       - git-core
       - rake
       - bzr
       - mercurial
   gem.installed:
-    - name : awesome_print
+    - name: awesome_print
   file.directory:
     - name: /root/goworkspace/src/github.com/hivetech
     - user: root
@@ -17,9 +18,10 @@ dependencies:
 
 install:
   cmd.run:
+    - env: GOPATH=/root/goworkspace
     - name: | 
       rake install:go
-      GOPATH=/root/goworkspace rake install
+      rake install
     - cwd: /app
     - user: root
     - require:

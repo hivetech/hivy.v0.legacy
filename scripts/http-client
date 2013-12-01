@@ -2,8 +2,8 @@
 
 # const (
   #IP=$(hostname -I | awk '{print $1}')
-  IP=127.0.0.1
-  PORT=8888
+  IP=162.243.58.195
+  PORT=8080
 # )
 
 function pre_processing() {

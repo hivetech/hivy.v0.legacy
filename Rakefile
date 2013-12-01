@@ -89,9 +89,16 @@ namespace :install do
     msg "Download hivy charms"
     sh "[ -d #{charmstore} ] || git clone #{hivy_charm_repo} #{charmstore}"
 
-    #FIXME go get ends up with an error
+    #FIXME Interactive process
+    #msg "Generating ssh key"
+    #sh "ssh-keygen -t rsa -b 2048"
     msg "download juju-core"
-    sh "go get -v launchpad.net/juju-core/..."
+    #sh "go get -v launchpad.net/juju-core/..."
+    sh "sudo add-apt-repository -y ppa:juju/stable"
+    sh "sudo apt-get update && sudo apt-get install -y juju-core"
+    sh "sudo apt-get install mongodb-server"
+    msg "juju init && $EDITOR ~/.juju/environments.yaml && sudo juju bootstrap"
+
   end
 
   desc "requested packages for hivy app and scripts"
